@@ -1,0 +1,176 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "generic/ubuntu2004"
+  # config.vm.box = "ubuntu/jammy64"
+
+  config.vm.define :master do |master|
+    # master.vm.disk :disk, size: "50GB", primary: true
+    master.vm.hostname = "master"
+    master.vm.synced_folder "./", "/vagrant", type: "nfs"
+    master.vm.network :private_network,
+      :libvirt__network_name => "k8s",
+      :ip => "192.168.221.10"
+      
+    master.vm.network :forwarded_port, guest: 6443, host: 6443
+    master.vm.provision :shell, privileged: false, inline: $provision_master_node
+  end
+
+  %w{worker1 worker2}.each_with_index do |name, i|
+    config.vm.define name do |worker|
+      # worker.vm.disk :disk, size: "80GB", primary: true
+      worker.vm.hostname = name
+      worker.vm.synced_folder "./", "/vagrant", type: "nfs"
+      worker.vm.network :private_network,
+        :libvirt__network_name => "k8s",
+        :ip => "192.168.221.#{i + 11}"
+
+      worker.vm.provision :shell, privileged: true, inline: <<-SHELL
+sleep 120
+/vagrant/join.sh
+echo 'Environment="KUBELET_EXTRA_ARGS=--node-ip=192.168.221.#{i + 11}"' | sudo tee -a /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+systemctl daemon-reload
+systemctl restart kubelet
+SHELL
+    end
+  end
+
+  config.vm.provider :libvirt do |q|
+    q.memory = 4096
+    q.cpus = 2
+    q.cpuaffinitiy 0 => '0-1', 1 => '2-3', 2 => '4,5', 3 => '6,7'
+    q.default_prefix = "k8s"
+  end
+
+  config.vm.provision :shell, privileged: true, inline: $install_common_tools
+  config.vm.provision :shell, inline: $install_multicast
+end
+
+$install_common_tools = <<-SHELL
+
+# bridged traffic to iptables is enabled for kube-router.
+sudo modprobe br_netfilter
+
+cat >> /etc/ufw/sysctl.conf <<EOF
+net/bridge/bridge-nf-call-ip6tables = 1
+net/bridge/bridge-nf-call-iptables = 1
+net/bridge/bridge-nf-call-arptables = 1
+EOF
+
+echo 1 | sudo tee -a /proc/sys/net/ipv4/ip_forward
+echo 1 | sudo tee -a /proc/sys/net/bridge/bridge-nf-call-iptables
+echo 1 | sudo tee -a /proc/sys/net/bridge/bridge-nf-call-ip6tables
+sudo sysctl -p
+
+# disable swap
+swapoff -a
+sed -i '/swap/d' /etc/fstab
+
+# Install stuff
+export DEBIAN_FRONTEND=noninteractive
+
+# Docker keyrings
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+sudo chmod a+r /etc/apt/keyrings/docker.gpg
+
+echo \
+"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+apt-get update
+apt-get install -y containerd.io conntrack socat
+
+# Kube
+CNI_PLUGINS_VERSION="v1.1.1"
+ARCH="amd64"
+DEST="/opt/cni/bin"
+sudo mkdir -p "$DEST"
+curl -L "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-${ARCH}-${CNI_PLUGINS_VERSION}.tgz" | sudo tar -C "$DEST" -xz
+DOWNLOAD_DIR="/usr/local/bin"
+sudo mkdir -p "$DOWNLOAD_DIR"
+CRICTL_VERSION="v1.25.0"
+ARCH="amd64"
+curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | sudo tar -C $DOWNLOAD_DIR -xz
+#RELEASE="$(curl -sSL https://dl.k8s.io/release/stable.txt)"
+RELEASE="v1.26.0"
+
+ARCH="amd64"
+cd $DOWNLOAD_DIR
+sudo curl -L --remote-name-all https://dl.k8s.io/release/${RELEASE}/bin/linux/${ARCH}/{kubeadm,kubelet}
+sudo chmod +x {kubeadm,kubelet}
+
+RELEASE_VERSION="v0.4.0"
+curl -sSL "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubelet/lib/systemd/system/kubelet.service" | sed "s:/usr/bin:${DOWNLOAD_DIR}:g" | sudo tee /etc/systemd/system/kubelet.service
+sudo mkdir -p /etc/systemd/system/kubelet.service.d
+curl -sSL "https://raw.githubusercontent.com/kubernetes/release/${RELEASE_VERSION}/cmd/kubepkg/templates/latest/deb/kubeadm/10-kubeadm.conf" | sed "s:/usr/bin:${DOWNLOAD_DIR}:g" | sudo tee /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+cd $HOME
+
+curl -LO https://dl.k8s.io/release/${RELEASE}/bin/linux/amd64/kubectl
+curl -LO "https://dl.k8s.io/${RELEASE}/bin/linux/amd64/kubectl.sha256"
+echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+# included for mismatch in cgroup between docker and kubelet
+sudo mkdir -p /etc/docker
+# cat <<EOF | sudo tee /etc/docker/daemon.json
+# {
+  # "exec-opts": ["native.cgroupdriver=systemd"],
+  # "log-driver": "json-file",
+  # "log-opts": {
+    # "max-size": "100m"
+  # },
+  # "storage-driver": "overlay2"
+# }
+# EOF
+# sudo systemctl restart docker
+sudo systemctl daemon-reload 
+
+sudo systemctl enable kubelet.service
+sudo systemctl enable containerd.service
+
+sudo mkdir -p  /etc/kubernetes/manifests 
+sudo mkdir -p /etc/containerd
+containerd config default | sudo tee /etc/containerd/config.toml
+sudo sed "s/SystemdCgroup = false/SystemdCgroup = true/g" /etc/containerd/config.toml -i=.bak
+sudo systemctl restart containerd
+sudo systemctl restart kubelet
+SHELL
+
+$provision_master_node = <<-SHELL
+OUTPUT_FILE=/vagrant/join.sh
+rm -rf $OUTPUT_FILE
+
+echo "Starting cluster..."
+sudo systemctl enable kubelet.service
+
+sudo kubeadm init --apiserver-advertise-address=192.168.221.10 --pod-network-cidr=10.244.0.0/16
+
+echo "Configuring kubectl..."
+mkdir -p $HOME/.kube
+sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+sudo chown $(id -u):$(id -g) $HOME/.kube/config
+
+sleep 30
+kubeadm token create --print-join-command > $OUTPUT_FILE
+chmod +x $OUTPUT_FILE
+
+echo "Fixing kubelet IP..."
+echo 'Environment="KUBELET_EXTRA_ARGS=--node-ip=192.168.221.10"' | sudo tee -a /etc/systemd/system/kubelet.service.d/10-kubeadm.conf
+
+echo "Configuring flannel..."
+# curl -o kube-flannel.yml https://raw.githubusercontent.com/coreos/flannel/v0.9.1/Documentation/kube-flannel.yml
+# sed -i.bak 's|"/opt/bin/flanneld",|"/opt/bin/flanneld", "--iface=enp0s8",|' kube-flannel.yml
+kubectl create -f https://raw.githubusercontent.com/flannel-io/flannel/master/Documentation/kube-flannel.yml
+
+echo "Almost done..."
+sudo systemctl daemon-reload
+sudo systemctl restart kubelet
+SHELL
+
+$install_multicast = <<-SHELL
+apt-get -qq install -y avahi-daemon libnss-mdns
+SHELL
+
+# sudo rm -rf  /etc/cni/net.d
+

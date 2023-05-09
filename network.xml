@@ -1,0 +1,5 @@
+<network>
+  <name>k8s</name>
+  <bridge name='k8s-bridge' stp='on' delay='0'/>
+  <ip address='192.168.221.1' netmask='255.255.255.0'/>
+</network>

@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rssfeed 
+spec:
+  containers:
+  - name: rssfeed
+    image: registry-192-168-221-100.nip.io/mfranzil/rssfeed 
+  imagePullSecrets:
+  - name: regcred
+
