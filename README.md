@@ -105,3 +105,13 @@ rate(node_disk_written_bytes_total[30s])
 no!!!! rate(node_cpu_seconds_total{mode="system",instance="192.168.57.12:9100"}[30s]) * 100
 ```
 
+## References
+
+1. ‘A possible reason for your Virtualbox VM entering the “gurumeditation” state’, meroupatate, May 02, 2020. https://meroupatate.github.io/posts/gurumeditation/ (accessed May 05, 2023).
+2. ‘Create and manage Vagrant machines using Libvirt/QEMU’, Vagrant Libvirt Documentation. https://vagrant-libvirt.github.io/vagrant-libvirt/installation.html (accessed May 05, 2023).
+3. ‘libvirt: Virtual Networking’. https://wiki.libvirt.org/VirtualNetworking.html (accessed May 05, 2023).
+4. ‘SettingUpNFSHowTo - Community Help Wiki’. https://help.ubuntu.com/community/SettingUpNFSHowTo (accessed May 05, 2023).
+5. Andrea, ‘Managing KVM virtual machines part I – Vagrant and libvirt’, LeftAsExercise, May 15, 2020. https://leftasexercise.com/2020/05/15/managing-kvm-virtual-machines-part-i-vagrant-and-libvirt/ (accessed May 05, 2023).
+
+
+
