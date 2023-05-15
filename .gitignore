@@ -1,5 +1,6 @@
 cluster
 data
+*.mp4
 registry
 certs
 join.sh
