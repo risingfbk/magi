@@ -1,0 +1,6 @@
+cpu=100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle",instance=~"192.168.221.(.*)"}[30s])) * 100)
+network_r=max by(instance) (rate(node_network_receive_bytes_total{instance=~"192.168.221.(.*)"}[30s]))
+network_s=max by(instance) (rate(node_network_transmit_bytes_total{instance=~"192.168.221.(.*)"}[30s]))
+disk_r=rate(node_disk_read_bytes_total{instance=~"192.168.221.(.*)"}[30s])
+disk_s=rate(node_disk_written_bytes_total{instance=~"192.168.221.(.*)"}[30s])
+memory=100 * (1 - node_memory_MemAvailable_bytes{instance=~"192.168.221.(.*)"}/node_memory_MemTotal_bytes{instance=~"192.168.221.(.*)"})
