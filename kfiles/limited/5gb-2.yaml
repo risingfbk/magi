@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: 5gb-2 
+  namespace: limited
+spec:
+  containers:
+  - name: 5gb
+    image: registry-192-168-221-100.nip.io/mfranzil/5gb:2
