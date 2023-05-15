@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: rq-limited
+  namespace: limited
+spec:
+  hard:
+    pods: "1"

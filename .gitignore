@@ -1,6 +1,4 @@
-cluster
 data
-registry
 certs
 join.sh
 .vagrant
