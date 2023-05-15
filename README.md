@@ -97,12 +97,12 @@ debug: true
 ## Prometheus queries
 
 ```shell
-100 - 100 * (node_memory_MemTotal_bytes - (rate(node_memory_MemFree_bytes[10m]) + rate(node_memory_Cached_bytes[10m]))) / node_memory_MemTotal_bytes
-100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle"}[30s])) * 100)
-rate(node_network_receive_bytes_total[30s])
-rate(node_disk_written_bytes_total[30s])
-
-no!!!! rate(node_cpu_seconds_total{mode="system",instance="192.168.57.12:9100"}[30s]) * 100
+100 - (avg by(instance) (rate(node_cpu_seconds_total{mode="idle",instance=~"192.168.221.(.*)"}[30s])) * 100)
+max by(instance) (rate(node_network_receive_bytes_total{instance=~"192.168.221.(.*)"}[30s]))
+max by(instance) (rate(node_network_transmit_bytes_total{instance=~"192.168.221.(.*)"}[30s]))
+rate(node_disk_read_bytes_total{instance=~"192.168.221.(.*)"}[30s])
+rate(node_disk_written_bytes_total{instance=~"192.168.221.(.*)"}[30s])
+100 * (1 - node_memory_MemAvailable_bytes{instance=~"192.168.221.(.*)"}/node_memory_MemTotal_bytes{instance=~"192.168.221.(.*)"})
 ```
 
 ## References

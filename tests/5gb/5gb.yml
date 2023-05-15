@@ -1,11 +1,11 @@
 apiVersion: v1
 kind: Pod
 metadata:
-  name: huuge 
+  name: 5gb 
 spec:
   containers:
-  - name: huuge
-    image: registry-192-168-221-100.nip.io/mfranzil/huuge 
+  - name: 5gb
+    image: registry-192-168-221-100.nip.io/mfranzil/5gb
   imagePullSecrets:
   - name: regcred
 
