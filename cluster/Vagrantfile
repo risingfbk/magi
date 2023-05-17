@@ -49,6 +49,7 @@ $install_common_tools = <<-SHELL
 # bridged traffic to iptables is enabled for kube-router.
 sudo modprobe br_netfilter
 
+# Enable IP forwarding and iptables rules.
 cat >> /etc/ufw/sysctl.conf <<EOF
 net/bridge/bridge-nf-call-ip6tables = 1
 net/bridge/bridge-nf-call-iptables = 1
@@ -64,7 +65,7 @@ sudo sysctl -p
 swapoff -a
 sed -i '/swap/d' /etc/fstab
 
-# Install stuff
+# noninteractive
 export DEBIAN_FRONTEND=noninteractive
 
 # Docker keyrings
@@ -81,18 +82,18 @@ apt-get update
 apt-get install -y containerd.io conntrack socat
 
 # Kube
-CNI_PLUGINS_VERSION="v1.1.1"
+CNI_PLUGINS_VERSION="v1.2.0"
 ARCH="amd64"
 DEST="/opt/cni/bin"
 sudo mkdir -p "$DEST"
 curl -L "https://github.com/containernetworking/plugins/releases/download/${CNI_PLUGINS_VERSION}/cni-plugins-linux-${ARCH}-${CNI_PLUGINS_VERSION}.tgz" | sudo tar -C "$DEST" -xz
 DOWNLOAD_DIR="/usr/local/bin"
 sudo mkdir -p "$DOWNLOAD_DIR"
-CRICTL_VERSION="v1.25.0"
+CRICTL_VERSION="v1.26.0"
 ARCH="amd64"
 curl -L "https://github.com/kubernetes-sigs/cri-tools/releases/download/${CRICTL_VERSION}/crictl-${CRICTL_VERSION}-linux-${ARCH}.tar.gz" | sudo tar -C $DOWNLOAD_DIR -xz
 #RELEASE="$(curl -sSL https://dl.k8s.io/release/stable.txt)"
-RELEASE="v1.26.0"
+RELEASE="v1.27.1"
 
 ARCH="amd64"
 cd $DOWNLOAD_DIR
@@ -126,10 +127,11 @@ sudo mkdir -p /etc/docker
 # sudo systemctl restart docker
 sudo systemctl daemon-reload 
 
-sudo systemctl enable kubelet.service
+systemctl enable --now kubelet
+
 sudo systemctl enable containerd.service
 
-sudo mkdir -p  /etc/kubernetes/manifests 
+sudo mkdir -p /etc/kubernetes/manifests 
 sudo mkdir -p /etc/containerd
 containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed "s/SystemdCgroup = false/SystemdCgroup = true/g" /etc/containerd/config.toml -i=.bak
@@ -151,7 +153,7 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-sleep 30
+sleep 60
 kubeadm token create --print-join-command > $OUTPUT_FILE
 chmod +x $OUTPUT_FILE
 
@@ -166,6 +168,8 @@ kubectl create -f https://raw.githubusercontent.com/flannel-io/flannel/master/Do
 echo "Almost done..."
 sudo systemctl daemon-reload
 sudo systemctl restart kubelet
+
+sudo cp $HOME/.kube/config /vagrant/config
 SHELL
 
 $install_multicast = <<-SHELL
