@@ -2,11 +2,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import seaborn as sns
+import matplotlib.dates as mdates
 import os
 
+DATA_DIR = 'results/5gb-nolimit/data'
+PLOT_DIR = 'results/5gb-nolimit/plots'
+
 # Read in the data
-plots = os.listdir('data')
-os.makedirs('plots', exist_ok=True)
+plots = os.listdir(DATA_DIR)
+os.makedirs(PLOT_DIR, exist_ok=True)
 
 mapping = {
     'cpu': {
@@ -36,7 +40,7 @@ mapping = {
 }
 
 for plot in plots:
-    df = pd.read_csv('data/' + plot, sep=';')
+    df = pd.read_csv(DATA_DIR + '/' + plot, sep=';')
     # header
     # Time;{instance="192.168.221.100:9100"};{instance="192.168.221.10:9100"};{instance="192.168.221.11:9100"};{instance="192.168.221.12:9100"}
     # Plot the data
@@ -63,17 +67,19 @@ for plot in plots:
     )
 
     # convert the time to datetime; time is like 1684088862
-    df['Time'] = pd.to_datetime(df['Time'], unit='s')
+    df["Time"].apply(pd.to_timedelta, unit='s')
+    df["Time"] = df["Time"] - df["Time"].iloc[0]
+    #df['Time'] = pd.to_datetime(df['Time'], unit='s')
+
+    # df["round_time"].apply(pd.to_timedelta, unit='s',
+                           
+    # df = df.groupby(by=[pd.Grouper(freq='1S', key='Time')]).mean().reset_index()
 
     if plot in ("disk_r", "disk_w", "network_r", "network_w"):
         df['Master'] = df['Master'] / 1024 / 1024
         df['Worker1'] = df['Worker1'] / 1024 / 1024
         df['Worker2'] = df['Worker2'] / 1024 / 1024
         df['Registry'] = df['Registry'] / 1024 / 1024
-
-    # add to the base time 
-
-    print(df.head())
 
     # select the subset of rows of the 
     # df = df[(df['Time'] >= '2023-05-14 19:23:00') & (df['Time'] <= '2023-05-14 19:45:00')]
@@ -83,13 +89,27 @@ for plot in plots:
     df.plot(x='Time', y='Worker2', ax=ax)
     df.plot(x='Time', y='Registry', ax=ax)
 
-    # set xtick columns every 30 seconds
-    ax.xaxis.set_major_locator(plt.MaxNLocator(20))
+    ticks = []
+    labels = []
+    mmax = df['Time'].max() - (df['Time'].max() % 60) + 60
+    for i in range(0, mmax, 60):
+        ticks.append(i)
+        labels.append(str(i // 60))
+    ax.set_xticks(ticks)
+    ax.set_xticklabels(labels)
+    
+
+    # ax.xaxis.set_major_locator(mdates.SecondLocator(interval=60))
+    # ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
+
+    print(df.head())
+
+    plt.gcf().autofmt_xdate()
 
     # Set the labels
-    ax.set_xlabel('Time')
+    ax.set_xlabel('Time (min)')
     ax.set_ylabel(mapping[plot]['ylabel'])
     ax.set_title(mapping[plot]['title'])
     
     # Save the figure
-    plt.savefig('plots/' + plot + '.png', dpi=300)
+    plt.savefig(PLOT_DIR + '/' + plot + '.png', dpi=300)
