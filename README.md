@@ -115,12 +115,25 @@ Finally, we can create the k8s secret from the CA cert:
 kubectl create secret generic regcred \
     --from-file=.dockerconfigjson=$HOME/.docker/config.json \
     --type=kubernetes.io/dockerconfigjson
+kubectl patch sa default -n limited -p '"imagePullSecrets": [{"name": "regcred" }]'
 ```
 
 After having pushed something, verify the contents of the registry:
 
 ```shell
 curl -X GET -u testuser:testpassword https://registry-192-168-221-100.nip.io/v2/_catalog
+```
+
+## k8s v1.27 Parallel Image Pulls
+
+```shell
+kubectl edit cm -n kube-system kubelet-config
+```
+
+Add the `maxParallelImagePulls: 1` and `serializeImagePulls: false` options. Then, on each node:
+
+```shell
+sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet
 ```
 
 ## References
