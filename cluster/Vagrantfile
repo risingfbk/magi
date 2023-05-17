@@ -47,6 +47,13 @@ end
 
 $install_common_tools = <<-SHELL
 
+# node_exporter
+wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+tar xzvf node_exporter-1.5.0.linux-amd64.tar.gz
+mv node_exporter-1.5.0.linux-amd64 node_exporter
+cd node_exporter/
+./node_exporter &
+
 # bridged traffic to iptables is enabled for kube-router.
 sudo modprobe br_netfilter
 
@@ -82,7 +89,8 @@ sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
 apt-get update
 apt-get install -y containerd.io conntrack socat
 
-# Kube
+# k8s
+# ---------------------------------------------------------
 CNI_PLUGINS_VERSION="v1.2.0"
 ARCH="amd64"
 DEST="/opt/cni/bin"
@@ -112,32 +120,33 @@ curl -LO https://dl.k8s.io/release/${RELEASE}/bin/linux/amd64/kubectl
 curl -LO "https://dl.k8s.io/${RELEASE}/bin/linux/amd64/kubectl.sha256"
 echo "$(cat kubectl.sha256)  kubectl" | sha256sum --check
 sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+# ---------------------------------------------------------
 
-# included for mismatch in cgroup between docker and kubelet
+# Some missing directories
 sudo mkdir -p /etc/docker
-# cat <<EOF | sudo tee /etc/docker/daemon.json
-# {
-  # "exec-opts": ["native.cgroupdriver=systemd"],
-  # "log-driver": "json-file",
-  # "log-opts": {
-    # "max-size": "100m"
-  # },
-  # "storage-driver": "overlay2"
-# }
-# EOF
-# sudo systemctl restart docker
-sudo systemctl daemon-reload 
-
-systemctl enable --now kubelet
-
-sudo systemctl enable containerd.service
-
 sudo mkdir -p /etc/kubernetes/manifests 
 sudo mkdir -p /etc/containerd
+
+sudo systemctl daemon-reload 
+systemctl enable --now kubelet
+
+# Enable containerd and configure it to use systemd cgroups
+sudo systemctl enable containerd.service
 containerd config default | sudo tee /etc/containerd/config.toml
 sudo sed "s/SystemdCgroup = false/SystemdCgroup = true/g" /etc/containerd/config.toml -i=.bak
+
+# Restart containerd and kubelet one more time
 sudo systemctl restart containerd
 sudo systemctl restart kubelet
+
+# Point crictl to containerd socket
+cat <<EOF | sudo tee /etc/crictl.yaml
+runtime-endpoint: unix:///var/run/containerd/containerd.sock
+image-endpoint: unix:///var/run/containerd/containerd.sock
+timeout: 10
+debug: false
+EOF
+
 SHELL
 
 $provision_master_node = <<-SHELL
@@ -154,7 +163,7 @@ mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 
-sleep 60
+sleep 30
 kubeadm token create --print-join-command > $OUTPUT_FILE
 chmod +x $OUTPUT_FILE
 
