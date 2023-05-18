@@ -1,5 +1,6 @@
 *.mp4
 certs
 join.sh
+cluster/config
 temp_data
 .vagrant
