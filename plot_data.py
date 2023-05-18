@@ -42,7 +42,6 @@ mapping = {
 for plot in plots:
     df = pd.read_csv(DATA_DIR + '/' + plot, sep=';')
     # header
-    # Time;{instance="192.168.221.100:9100"};{instance="192.168.221.10:9100"};{instance="192.168.221.11:9100"};{instance="192.168.221.12:9100"}
     # Plot the data
     sns.set_style('whitegrid')
     sns.set_context('paper')
@@ -53,15 +52,18 @@ for plot in plots:
             '{instance="192.168.221.10:9100"}': 'Master',
             '{instance="192.168.221.11:9100"}': 'Worker1',
             '{instance="192.168.221.12:9100"}': 'Worker2',
-            '{instance="192.168.221.100:9100"}': 'Registry',
+            '{instance="192.168.221.100:9100"}': 'Registry_Old',
+            '{instance="10.231.0.208:9100"}': 'Registry',
             '{device="vda",instance="192.168.221.10:9100",job="prometheus"}': 'Master',
             '{device="vda",instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
             '{device="vda",instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
-            '{device="vda",instance="192.168.221.100:9100",job="prometheus"}': 'Registry',
+            '{device="vda",instance="192.168.221.100:9100",job="prometheus"}': 'Registry_Old',
+            '{device="vda",instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
             '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
             '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
             '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
-            '{instance="192.168.221.100:9100",job="prometheus"}': 'Registry',
+            '{instance="192.168.221.100:9100",job="prometheus"}': 'Registry_Old',
+            '{instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
         },
         inplace=True
     )
