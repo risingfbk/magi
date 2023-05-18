@@ -1,4 +1,5 @@
 *.mp4
 certs
 join.sh
+temp_data
 .vagrant
