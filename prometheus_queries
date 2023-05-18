@@ -4,3 +4,4 @@ network_w=max by(instance) (rate(node_network_transmit_bytes_total{instance=~"(1
 disk_r=max by(instance) (rate(node_disk_read_bytes_total{instance=~"(192.168.221.(.*)|10.231.0.*)"}[30s]))
 disk_w=max by(instance) (rate(node_disk_written_bytes_total{instance=~"(192.168.221.(.*)|10.231.0.*)"}[30s]))
 memory=100 * (1 - node_memory_MemAvailable_bytes{instance=~"(192.168.221.(.*)|10.231.0.*)"}/node_memory_MemTotal_bytes{instance=~"(192.168.221.(.*)|10.231.0.*)"})
+worker2cpu=sum by(mode) (rate(node_cpu_seconds_total{instance=~"(192.168.221.12(.*))"}[20s]))
