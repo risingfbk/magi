@@ -6,4 +6,4 @@ metadata:
 spec:
   containers:
   - name: 5gb
-    image: registry-192-168-221-100.nip.io/mfranzil/5gb:3
+    image: registry-10-231-0-208.nip.io/mfranzil/5gb:3
