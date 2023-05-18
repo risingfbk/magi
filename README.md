@@ -50,7 +50,8 @@ Once finished, Vagrant will spit out a `config` file that can be used to interac
 ## Registry
 
 Handling the registry is trickier as it requires some manual steps. Indeed, k8s and Docker strongly dislike self-signed certificates.
-First of all, run the `Vagrantfile` and make sure the registry VM is up and running. You may do so before or after the cluster creation, but remember to perform all the following steps before trying to push something to the registry.
+First of all, run the `Vagrantfile` and make sure the registry VM is up and running. In alternative, you may boot up another VM or use a physical machine, installing Docker and Docker Compose on it.
+You may do so before or after the cluster creation, but remember to perform all the following steps before trying to push something to the registry.
 Once the VM is up, connect to it and start the registry container:
 
 ```shell
@@ -64,24 +65,32 @@ cd /vagrant
 docker compose up -d
 ```
 
-You will now have a fresh registry up and running. It may only be accessed with the credentials found in the `auth` folder. The default user is `testuser` and the default password is `testpassword`. You may change them by editing the `htpasswd` file.
-Now, we need to make sure the registry is accessible from both the host machine and the k8s nodes. To do so, we need to generate a certificate for the registry.
-We will use the excellent `nip.io` service to resolve the registry domain name to the VM IP. Unfortunately, in our setup our host machine was airgapped, and we were unable to use Let's Encrypt to generate a certificate. Therefore, we will use a self-signed certificate.
+You will now have a fresh registry up and running. It may only be accessed with the credentials found in the `auth` folder.
+The default user is `testuser` and the default password is `testpassword`. You may change them by editing the `htpasswd` file.
+
+Now, we need to make sure the registry is accessible from both the host machine and the k8s nodes.
+To do so, we need to generate a certificate for the registry. We will use the excellent `nip.io` service to resolve the
+registry domain name to the VM IP. Unfortunately, in our setup our host machine was airgapped, and we were unable to use
+Let's Encrypt to generate a certificate. Therefore, we will use a self-signed certificate.
+
+Finally, remember to set the `REGISTRY_IP_DOMAIN` variable to the domain name you want to use for the registry. In our case, we used
+`registry-192-168-221.100.nip.io`, which resolves to the IP of the registry VM. You may use whatever you want, but remember to change it everywhere.
 
 ```shell
+REGISTRY_IP_DOMAIN=${REGISTRY_IP_DOMAIN:-registry-192-168-221.100.nip.io}
 openssl req \
   -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key \
-  -addext "subjectAltName = DNS:registry-192-168-221-100.nip.io" \
+  -addext "subjectAltName = DNS:${REGISTRY_IP_DOMAIN}" \
   -x509 -days 365 -out certs/domain.crt
 ```
 
 With Let's Encrypt:
 
 ```shell
-certbot certonly --standalone --preferred-challenges http --non-interactive --staple-ocsp --agree-tos -m mfranzil@fbk.eu -d registry-192-168-221-100.nip.io
+certbot certonly --standalone --preferred-challenges http --non-interactive --staple-ocsp --agree-tos -m mfranzil@fbk.eu -d ${REGISTRY_IP_DOMAIN}
 ```
 
-The certificate will be valid for the `registry-192-168-221-100.nip.io` domain. You may change it to whatever you want, but remember to change it everywhere.
+The certificate will be valid for the `${REGISTRY_IP_DOMAIN}` domain. You may change it to whatever you want, but remember to change it everywhere.
 
 Now, copy the certificate in each k8s node:
 
@@ -93,20 +102,19 @@ vagrant scp ./certs/domain.crt worker2:domain.crt
 
 Some final steps:
 
-- Perform `sudo cp $HOME/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates` on each node
+- Perform `sudo cp $HOME/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd` on each node
   - (optional) do the same on the host machine: `(cp ./certs/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`
 - Copy the certificate in the host machine:
 
 ```shell
-sudo mkdir -p /etc/docker/certs.d/registry-192-168-221-100.nip.io/
-sudo cp /home/vbox/kubetests/certs/domain.crt /etc/docker/certs.d/registry-192-168-221-100.nip.io/ca.crt
+sudo mkdir -p /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/
+sudo cp /home/vbox/kubetests/certs/domain.crt /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/ca.crt
 ```
 
-- *Important!* Perform a `sudo systemctl restart containerd` on each node to let containerd know of the new certificates
 - Perform a `docker login` and check that everything is ok (testuser:testpassword)
 
 ```shell
-docker login registry-192-168-221-100.nip.io
+docker login ${REGISTRY_IP_DOMAIN}
 ```
 
 Finally, we can create the k8s secret from the CA cert:
@@ -121,7 +129,7 @@ kubectl patch sa default -n limited -p '"imagePullSecrets": [{"name": "regcred" 
 After having pushed something, verify the contents of the registry:
 
 ```shell
-curl -X GET -u testuser:testpassword https://registry-192-168-221-100.nip.io/v2/_catalog
+curl -X GET -u testuser:testpassword https://${REGISTRY_IP_DOMAIN}/v2/_catalog
 ```
 
 ## k8s v1.27 Parallel Image Pulls
