@@ -14,6 +14,6 @@ services:
       REGISTRY_AUTH_HTPASSWD_PATH: /auth/htpasswd
       REGISTRY_AUTH_HTPASSWD_REALM: Registry Realm
     volumes:
-      - /opt/docker/registry:/var/lib/registry
-      - ./certs:/certs
-      - ./auth:/auth
+      - /opt/registry:/var/lib/registry
+      - /vagrant/certs:/certs
+      - /vagrant/auth:/auth

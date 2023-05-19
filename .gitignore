@@ -1,4 +1,5 @@
 *.mp4
+registry_files
 certs
 join.sh
 cluster/config
