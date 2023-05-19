@@ -3,8 +3,9 @@
 STYX=/home/ubuntu/.asdf/installs/golang/1.20.4/packages/bin/styx
 QUERIES=prometheus_queries
 EXPORT_FOLDER=temp_data
-TS='2023-05-17T13:23:00'
-DURATION=15m
+
+TS=${1:-'2023-05-19T07:08:20'}
+DURATION=${2-:16m}
 
 for i in "${(@f)"$(<${QUERIES})"}"; do 
     echo "Exporting $i..."
