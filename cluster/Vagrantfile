@@ -147,6 +147,21 @@ timeout: 10
 debug: false
 EOF
 
+# Install BCC and Go for containerdsnoop
+curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh
+
+apt-get install -yqq python3-pip linux-headers-$(uname -r) bison build-essential \
+  cmake flex g++ git libelf-dev zlib1g-dev libfl-dev systemtap-sdt-dev binutils-dev llvm-8-dev llvm-8-runtime \
+  libclang-8-dev clang-8 arping netperf iperf3 python3-distutils
+wget https://github.com/iovisor/bcc/releases/download/v0.24.0/bcc-src-with-submodule.tar.gz
+pip install setuptools
+tar xvf bcc-src-with-submodule.tar.gz && rm bcc-src-with-submodule.tar.gz
+mkdir bcc/build; cd bcc/build
+cmake -DPYTHON_CMD=python3 ..
+make -j8 && make install && ldconfig
+
 SHELL
 
 $provision_master_node = <<-SHELL
