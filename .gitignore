@@ -5,3 +5,4 @@ join.sh
 cluster/config
 temp_data
 .vagrant
+.idea

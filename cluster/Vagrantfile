@@ -147,7 +147,7 @@ timeout: 10
 debug: false
 EOF
 
-# Install BCC and Go for containerdsnoop
+# Install BCC and Go for containerdsnoop tests
 curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh
