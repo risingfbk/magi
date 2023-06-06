@@ -4,7 +4,8 @@ RUN apt-get update && \
     zip bison build-essential cmake flex git libedit-dev curl \
     libllvm12 llvm-12-dev libclang-12-dev python \
     zlib1g-dev libelf-dev libfl-dev python3-setuptools \
-    liblzma-dev arping netperf iperf gcc && \
+    liblzma-dev arping netperf iperf gcc \
+    libbpf-dev linux-headers-$(uname -r) linux-libc-dev&& \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN cd /tmp && \
     git clone https://github.com/iovisor/bcc.git && \
@@ -20,8 +21,7 @@ RUN cd /tmp && \
     echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
-RUN apt-get update && apt-get install -yqq libbpf-dev linux-headers-$(uname -r) linux-libc-dev && rm -rf /var/lib/apt/lists/*
-RUN /usr/local/go/bin/go install github.com/mfranzil/containerdsnoop@latest
+RUN bash -c 'go install github.com/mfranzil/containerdsnoop@latest'
 COPY . /app
 WORKDIR /app
 CMD ["magi_system.sh"]
