@@ -7,24 +7,20 @@ RUN apt-get update && \
     liblzma-dev arping netperf iperf gcc && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN cd /tmp && \
+    git clone https://github.com/iovisor/bcc.git && \
+    mkdir bcc/build; cd bcc/build && \
+    cmake .. && make && make install && \
+    cmake -DPYTHON_CMD=python3 .. && \
+    cd src/python/ && make && make install \
+RUN cd /tmp && \
     curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz && \
     echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh && \
     echo 'export CGO_ENABLED=1' >> /etc/profile.d/golang.sh && \
     echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
-    export PATH=$PATH:/usr/local/go/bin && \
-    export CGO_ENABLED=1 && \
-    export GOHOSTARCH=amd64 && \
-    export GOARCH=amd64 && \
     rm -f go1.20.4.linux-amd64.tar.gz
-RUN cd /tmp && \
-    git clone https://github.com/iovisor/bcc.git && \
-    mkdir bcc/build; cd bcc/build && \
-    cmake .. && make && make install && \
-    cmake -DPYTHON_CMD=python3 .. && \
-    cd src/python/ && make && make install
-RUN go install https://github.com/mfranzil/containerdsnoop@latest
+RUN /usr/local/go/bin/go install https://github.com/mfranzil/containerdsnoop@latest
 COPY . /app
 WORKDIR /app
 CMD ["magi_system.sh"]
