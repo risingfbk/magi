@@ -20,7 +20,7 @@ RUN cd /tmp && \
     echo 'export CGO_ENABLED=1' >> /etc/profile.d/golang.sh && \
     echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
-    source /etc/profile.d/golang.sh && \
+    . /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
 RUN go install github.com/mfranzil/containerdsnoop@latest
 COPY . /app
