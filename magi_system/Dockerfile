@@ -23,10 +23,10 @@ RUN cd /tmp && \
     . /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
 RUN cd /tmp && \
-    git clone github.com/mfranzil/containerdsnoop@latest && \
+    git clone https://github.com/mfranzil/containerdsnoop && \
     cd containerdsnoop && \
-    go build -o /usr/local/bin/containerdsnoop containerdsnoop.go && \
+    /usr/local/go/bin/go build -o /usr/local/bin/containerdsnoop && \
     cd /
 COPY . /app
 WORKDIR /app
-CMD ["magi_system.sh"]
+CMD ["/bin/bash", "/app/magi_system.sh"]
