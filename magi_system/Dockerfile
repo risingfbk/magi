@@ -11,7 +11,7 @@ RUN cd /tmp && \
     mkdir bcc/build; cd bcc/build && \
     cmake .. && make && make install && \
     cmake -DPYTHON_CMD=python3 .. && \
-    cd src/python/ && make && make install \
+    cd src/python/ && make && make install
 RUN cd /tmp && \
     curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz && \
