@@ -1,6 +1,6 @@
 FROM ubuntu:20.04
 RUN apt-get update && \
-    DEBIAN_FRONTEND=noninteractive apt install -yqq \
+    DEBIAN_FRONTEND=noninteractive apt-get install -yqq \
     zip bison build-essential cmake flex git libedit-dev curl \
     libllvm12 llvm-12-dev libclang-12-dev python \
     zlib1g-dev libelf-dev libfl-dev python3-setuptools \
@@ -13,6 +13,10 @@ RUN cd /tmp && \
     echo 'export CGO_ENABLED=1' >> /etc/profile.d/golang.sh && \
     echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
+    export PATH=$PATH:/usr/local/go/bin && \
+    export CGO_ENABLED=1 && \
+    export GOHOSTARCH=amd64 && \
+    export GOARCH=amd64 && \
     rm -f go1.20.4.linux-amd64.tar.gz
 RUN cd /tmp && \
     git clone https://github.com/iovisor/bcc.git && \
@@ -21,7 +25,6 @@ RUN cd /tmp && \
     cmake -DPYTHON_CMD=python3 .. && \
     cd src/python/ && make && make install
 RUN go install https://github.com/mfranzil/containerdsnoop@latest
-
-COPY . /
+COPY . /app
 WORKDIR /app
-CMD ["/app/magi_system.sh"]
+CMD ["magi_system.sh"]
