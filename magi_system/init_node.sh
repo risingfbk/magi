@@ -3,7 +3,7 @@
 LOG_FILE=/tmp/containerdsnoop.log
 
 if [[ "$UID" -ne 0 ]]; then
-    echo "Please run eva01.sh as root."
+    echo "Please run as root."
     exit 1
 fi
 
@@ -46,18 +46,18 @@ if [[ "$install_go" -eq 1 || "$install_containerdsnoop" -eq 1 ]]; then
 fi
 
 echo "Setting up socat..."
-sudo rm -rf ${LOG_FILE}
-sudo socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
+rm -rf ${LOG_FILE}
+socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
 
 cd ~/containerdsnoop
 go get .
 
 echo "Rebooting containerd, this may take a while..."
-sudo systemctl stop containerd
-(sleep 15 && sudo systemctl start containerd) &
+systemctl stop containerd
+(sleep 15 && systemctl start containerd) &
 
 echo "Starting containerdsnoop..."
-sudo $(which go) run main.go -complete_content 2>&1 | tee -a ${LOG_FILE}
+$(which go) run main.go -complete_content 2>&1 | tee -a ${LOG_FILE}
 
 # &> ${LOG_FILE} # &
 # echo "Waiting for containerdsnoop to start..."

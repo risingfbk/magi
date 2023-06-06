@@ -16,12 +16,11 @@ RUN cd /tmp && \
 RUN cd /tmp && \
     curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz && \
     tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz && \
-    echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh && \
-    echo 'export CGO_ENABLED=1' >> /etc/profile.d/golang.sh && \
-    echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
-    echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
-    . /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
+ENV PATH="$PATH:/usr/local/go/bin"
+ENV CGO_ENABLED=1
+ENV GOHOSTARCH=amd64
+ENV GOARCH=amd64
 RUN cd /tmp && \
     git clone github.com/mfranzil/containerdsnoop@latest && \
     cd containerdsnoop && \
