@@ -20,7 +20,8 @@ RUN cd /tmp && \
     echo 'export GOHOSTARCH=amd64' >> /etc/profile.d/golang.sh && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
-RUN /usr/local/go/bin/go install https://github.com/mfranzil/containerdsnoop@latest
+RUN apt-get update && apt-get install -yqq libbpf-dev linux-headers-$(uname -r) linux-libc-dev && rm -rf /var/lib/apt/lists/*
+RUN /usr/local/go/bin/go install github.com/mfranzil/containerdsnoop@latest
 COPY . /app
 WORKDIR /app
 CMD ["magi_system.sh"]
