@@ -49,15 +49,12 @@ echo "Setting up socat..."
 rm -rf ${LOG_FILE}
 socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
 
-cd ~/containerdsnoop
-go get .
-
 echo "Rebooting containerd, this may take a while..."
 systemctl stop containerd
 (sleep 15 && systemctl start containerd) &
 
 echo "Starting containerdsnoop..."
-$(which go) run main.go -complete_content 2>&1 | tee -a ${LOG_FILE}
+containerdsnoop -complete_content 2>&1 | tee -a ${LOG_FILE}
 
 # &> ${LOG_FILE} # &
 # echo "Waiting for containerdsnoop to start..."
