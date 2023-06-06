@@ -16,7 +16,7 @@ if command -v go &>/dev/null; then
     if [[ $(go version) =~ "go1.20" ]]; then
         echo "Go 1.20 is installed"
     else
-        echo "Go 1.20 is not installed, installing..."
+        echo "Go 1.20 is not installed..."
         install_go=1
     fi
 else
@@ -26,47 +26,41 @@ else
         echo 'export PATH=$PATH:/usr/local/go/bin' >>~/.bashrc
         source ~/.bashrc
     else
-        echo "Go is not installed, installing..."
+        echo "Go is not installed..."
         install_go=1
     fi
 fi
 
-if [[ "$install_go" -eq 1 ]]; then
-    rm -rf /usr/local/go
-    curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
-    tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
-    echo 'export PATH=$PATH:/usr/local/go/bin' >>~/.bashrc
-    source ~/.bashrc
-fi
-
 # Assure that containerdsnoop is installed on the system
 install_containerdsnoop=0
-if [[ -d ~/containerdsnoop && -f ~/containerdsnoop/main.go ]]; then
+if command -v containerdsnoop &>/dev/null; then
     echo "containerdsnoop is installed"
 else
-    echo "containerdsnoop is not installed, installing..."
+    echo "containerdsnoop is not installed..."
     install_containerdsnoop=1
 fi
 
-if [[ "$install_containerdsnoop" -eq 1 ]]; then
-    git clone https://github.com/mfranzil/containerdsnoop
+if [[ "$install_go" -eq 1 || "$install_containerdsnoop" -eq 1 ]]; then
+    echo "Some dependencies are missing. Please fix them before continuing."
+    exit 1
 fi
 
-# sudo rm -rf ${LOG_FILE}
-# echo "Setting up socat..."
-# sudo socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
+echo "Setting up socat..."
+sudo rm -rf ${LOG_FILE}
+sudo socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
 
-# Start listening for containerd events
-echo "Starting containerdsnoop..."
 cd ~/containerdsnoop
-# Download dependencies
 go get .
-sudo systemctl stop containerd
-(sleep 6 && sudo systemctl start containerd) &
-sudo $(which go) run main.go -complete_content 2>&1 # &> ${LOG_FILE} # &
 
+echo "Rebooting containerd, this may take a while..."
+sudo systemctl stop containerd
+(sleep 15 && sudo systemctl start containerd) &
+
+echo "Starting containerdsnoop..."
+sudo $(which go) run main.go -complete_content 2>&1 | tee -a ${LOG_FILE}
+
+# &> ${LOG_FILE} # &
 # echo "Waiting for containerdsnoop to start..."
 # sleep 15
-
 # rip="$(pgrep "main|socat" | tr '\n' ' ')"
 # echo "To terminate everything: kill $rip"
