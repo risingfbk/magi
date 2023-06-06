@@ -22,7 +22,11 @@ RUN cd /tmp && \
     echo 'export GOARCH=amd64' >> /etc/profile.d/golang.sh && \
     . /etc/profile.d/golang.sh && \
     rm -f go1.20.4.linux-amd64.tar.gz
-RUN go install github.com/mfranzil/containerdsnoop@latest
+RUN cd /tmp && \
+    git clone github.com/mfranzil/containerdsnoop@latest && \
+    cd containerdsnoop && \
+    go build -o /usr/local/bin/containerdsnoop containerdsnoop.go && \
+    cd /
 COPY . /app
 WORKDIR /app
 CMD ["magi_system.sh"]
