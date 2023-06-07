@@ -5,7 +5,7 @@ RUN apt-get update && \
     libllvm12 llvm-12-dev libclang-12-dev python \
     zlib1g-dev libelf-dev libfl-dev python3-setuptools \
     liblzma-dev arping netperf iperf gcc \
-    libbpf-dev linux-headers-$(uname -r) linux-libc-dev&& \
+    libbpf-dev linux-headers-$(uname -r) linux-libc-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 RUN cd /tmp && \
     git clone https://github.com/iovisor/bcc.git && \
