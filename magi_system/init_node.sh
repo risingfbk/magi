@@ -50,8 +50,9 @@ rm -rf ${LOG_FILE}
 socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
 
 echo "Rebooting containerd, this may take a while..."
-systemctl stop containerd
-(sleep 15 && systemctl start containerd) &
+
+systemctl stop kubelet
+(sleep 15 && systemctl start kubelet) &
 
 echo "Starting containerdsnoop..."
 containerdsnoop -complete_content 2>&1 | tee -a ${LOG_FILE}
