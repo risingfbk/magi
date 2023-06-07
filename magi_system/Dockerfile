@@ -27,6 +27,6 @@ RUN cd /tmp && \
     cd containerdsnoop && \
     go build -o /usr/local/bin/containerdsnoop && \
     cd /
-COPY . /app
-WORKDIR /app
-CMD ["/bin/bash", "/app/magi_system.sh"]
+COPY . /tmp/magi
+WORKDIR /tmp/magi
+CMD ["/bin/bash", "/tmp/magi/magi_system.sh"]
