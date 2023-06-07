@@ -7,8 +7,6 @@ if [[ "$UID" -ne 0 ]]; then
     exit 1
 fi
 
-cd ~
-
 # Assure that Go 1.20 is installed on the system
 install_go=0
 if command -v go &>/dev/null; then
@@ -54,10 +52,29 @@ systemctl stop kubelet
 (sleep 15 && systemctl start kubelet) &
 
 echo "Starting containerdsnoop..."
-containerdsnoop -complete_content 2>&1 | tee -a ${LOG_FILE}
+containerdsnoop -complete_content >${LOG_FILE} 2>&1 &
+
+echo "Checking python3 requirements..."
+echo "By proceeding, you are installing the following packages:"
+cat requirements.txt
+echo "on this python environment:"
+echo $(which python3)
+python3 --version
+read -p "Do you want to proceed? [y/N] " -n 1 -r
+echo
+if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+    echo "Aborting..."
+    exit 1
+fi
+
+echo "Installing python3 requirements..."
+pip3 install -r requirements.txt
+
+# trap "exit" INT TERM ERR
 
 echo "Starting monitoring..."
 python3 node.py --snoopfile ${LOG_FILE} --listen-port 22333
+
 # &> ${LOG_FILE} # &
 # echo "Waiting for containerdsnoop to start..."
 # sleep 15

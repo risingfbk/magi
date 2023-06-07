@@ -105,10 +105,12 @@ def inspect_logs(loglines):
         tmp = tmp[:i + 1]
         js = json.loads(tmp)
         image = js["spec"]["containers"][0]["image"]
-        queue.append(image)
-        log.info(f"Added {image} to queue")
 
-        # TODO implement removal of image from queue
+        if image not in queue:
+            queue.append(image)
+            log.info(f"Added {image} to queue")
+
+        # TODO implement removal of image from queue and duplicate detection
 
 def main(args):
     # One thread reads the file and keeps a list of all the images being pulled
