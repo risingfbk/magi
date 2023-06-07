@@ -8,9 +8,9 @@ metadata:
     app: magi-system
 spec:
   containers:
-  - image: registry-10-231-0-208.nip.io/mfranzil/magi-system:1
+  - image: registry-10-231-0-208.nip.io/mfranzil/magi-system:3
     command:
-      - "/app/init_node.sh"
+      - "/tmp/magi/init_node.sh"
     imagePullPolicy: IfNotPresent
     name: magi-system
     volumeMounts:
