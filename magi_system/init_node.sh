@@ -45,18 +45,19 @@ if [[ "$install_go" -eq 1 || "$install_containerdsnoop" -eq 1 ]]; then
     exit 1
 fi
 
-echo "Setting up socat..."
-rm -rf ${LOG_FILE}
-socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
+# echo "Setting up socat..."
+# rm -rf ${LOG_FILE}
+# socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
 
-echo "Rebooting containerd, this may take a while..."
-
+echo "Rebooting kubelet, this may take a while..."
 systemctl stop kubelet
 (sleep 15 && systemctl start kubelet) &
 
 echo "Starting containerdsnoop..."
 containerdsnoop -complete_content 2>&1 | tee -a ${LOG_FILE}
 
+echo "Starting monitoring..."
+python3 node.py --snoopfile ${LOG_FILE} --listen-port 22333
 # &> ${LOG_FILE} # &
 # echo "Waiting for containerdsnoop to start..."
 # sleep 15
