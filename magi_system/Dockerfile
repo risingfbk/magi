@@ -1,8 +1,8 @@
 FROM ubuntu:20.04
-RUN apt-get update && \
+RUN apt-get -yqq update && \
     DEBIAN_FRONTEND=noninteractive apt-get install -yqq \
     zip bison build-essential cmake flex git libedit-dev curl \
-    libllvm12 llvm-12-dev libclang-12-dev python \
+    libllvm12 llvm-12-dev libclang-12-dev python python3-pip \
     zlib1g-dev libelf-dev libfl-dev python3-setuptools \
     liblzma-dev arping netperf iperf gcc kmod memcached \
     libbpf-dev linux-headers-$(uname -r) linux-libc-dev \

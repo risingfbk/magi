@@ -12,7 +12,7 @@ from common import follow
 def main(args: argparse.Namespace):
     log.basicConfig(level=log.INFO, format="%(asctime)s [%(levelname)s] - %(message)s")
 
-    file = args.file
+    file = args.auditfile
 
     if args.test or args.interactive_test:
         with open(file, "r") as f:
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     parser.add_argument("-p", "--target-port", help="Target port of nodes", default=8080)
     args = parser.parse_args()
 
-    if not os.path.exists(args.file):
+    if not os.path.exists(args.auditfile):
         print("File does not exist, exiting")
         sys.exit(1)
 
