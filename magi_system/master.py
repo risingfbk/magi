@@ -4,6 +4,8 @@ import json
 import logging as log
 import os
 import sys
+import time
+
 import requests
 
 from common import follow
@@ -22,10 +24,17 @@ def main(args: argparse.Namespace):
 
     handled = {}
 
+    log.info("Starting to inspect logs...")
+    log.info(f"Following log file {file}")
+
     for line in loglines:
         if "/pods" not in line:
             continue
-        js = json.loads(line)
+        try:
+            js = json.loads(line)
+        except json.decoder.JSONDecodeError:
+            log.error(f"Could not decode json from {line}")
+            continue
 
         uri = js["requestURI"]
         verb = js["verb"]
@@ -74,7 +83,8 @@ def main(args: argparse.Namespace):
             log.info(f"New pod detected! {key} with image {handled[key]['image']}")
         else: # Non-initialization
             if key not in handled:
-                log.warning(f"Alert: {key} was not scheduled! (previous status: None)")
+                log.info(f"Ignoring: {key} was not scheduled! (previous status: None), status: verb={verb}, stage={stage}, uri={uri}") #, json={js}")
+                continue
             if verb == "create" and stage == "ResponseComplete":
                 if handled[key]["status"] != 0b001:
                     log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
@@ -86,9 +96,18 @@ def main(args: argparse.Namespace):
                     log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
                 # *siren noises*
                 log.info(f"Sending alert to {handled[key]['targetNode']} with image {handled[key]['image']}")
-                requests.post(f"http://{handled[key]['targetNode']}:{args.target_port}/alert", json={
-                    "image": handled[key]["image"]
-                })
+                try:
+                    time.sleep(2)
+                    requests.post(f"http://{handled[key]['targetNode']}:{args.target_port}/alert", json={
+                        "image": handled[key]["image"]
+                    })
+                except requests.exceptions.ConnectionError:
+                    log.error(f"Could not connect to {handled[key]['targetNode']}, is the node down?")
+                handled[key]["status"] = 0b111
+            elif verb == "delete" and stage == "ResponseComplete":
+                if handled[key]["status"] != 0b111:
+                    log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
+                log.info(f"Node {handled[key]['targetNode']} acknowledged alert, detected pod {key} deletion")
                 del handled[key]
             else:
                 continue
