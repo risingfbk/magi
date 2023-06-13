@@ -66,13 +66,6 @@ def main(args: argparse.Namespace):
         # delete/RequestReceived
         # delete/ResponseComplete
 
-        """
-        tail -F /var/log/kubernetes/audit/audit.log | grep "/pods" | \
-         jq 'select(.verb == "delete" or .verb == "create")| {requestURI: .requestURI, verb: .verb, 
-         stage: .stage, imageRequest: .responseObject.spec.containers[0].image, targetNode: 
-         .requestObject.target.name, respondingNode: .responseObject.spec.nodeName}'
-        """
-
         if verb == "create" and stage == "ResponseComplete" and "kubectl-client-side-apply" in uri:
             if key in handled:
                 log.warning(f"Alert: {key} was already scheduled! (previous status: {handled[key]['status']})")
