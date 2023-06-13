@@ -3,6 +3,7 @@ import json
 import logging as log
 import os
 import threading
+from time import sleep
 
 from flask import Flask, request, abort
 
@@ -19,11 +20,23 @@ def alert():
     json = request.json
     image = json["image"]
 
+    # TODO detect position of the image and see if it's actually being pulled
     if image in queue:
+        log.info(f"Image {image} in queue, terminating download")
         terminate_download(image)
-        return {"result": "Requesting removal of image {} from queue".format(image)}, 202
+        return {"result": f"Requesting removal of image {image} from queue"}, 202
     else:
-        return {"result": "Image {} not in queue".format(image)}, 404
+        log.info(f"Image {image} not in queue, ignoring")
+        return {"result": f"Image {image} not in queue, ignoring"}, 404
+
+
+def show_queue():
+    old_queuestr = str(queue)
+    while True:
+        if str(queue) != old_queuestr:
+            log.info(f"Queue: {queue}")
+            old_queuestr = str(queue)
+        sleep(5)
 
 
 def terminate_download(image):
@@ -49,6 +62,9 @@ def terminate_download(image):
               'sport = {}'
     result = os.popen(command).read().strip()
     log.info(f"Result: {result}")
+
+    queue.clear()
+    log.info("Queue emptied due to termination of download")
 
 def run_flask():
     app.run(host="0.0.0.0", port=args.listen_port)
@@ -86,38 +102,76 @@ def inspect_logs(loglines):
     for line in loglines:
         if "PullImage" not in line:
             continue
-        if "REQ" not in line:
-            continue
-        tmp = line.split("last-applied-configuration:")
-        tmp = tmp[1].split("}\n")[0].strip().replace("\\n", "").replace("\\", "").replace(" ", "")
-        # Try to count curly braces and terminate when the count is 0
-        ctcrl = 0
-        i = 0
-        while i < len(tmp):
-            # print(f"current char: {tmp[i]}, i: {i}, ctcrl: {ctcrl}")
-            if tmp[i] == "{":
-                ctcrl += 1
-            elif tmp[i] == "}":
-                ctcrl -= 1
-            if ctcrl == 0:
-                break
-            i += 1
-        tmp = tmp[:i + 1]
-        js = json.loads(tmp)
-        image = js["spec"]["containers"][0]["image"]
 
-        if image not in queue:
-            queue.append(image)
-            log.info(f"Added {image} to queue")
+        if "RESP" in line:
+            # This is a response
+            # containerd     1415023 3409742 3416218 RESP   33     /runtime.v1.ImageService/PullImage
+            # "&PullImageResponse{ImageRef:sha256:cfb479bb8ac9e4d1b941d04baf842bd392ebfcab62d292f9006f2a56edb7e9d6,}"
+            sha = line.lower().split("imageref:sha256:")[1].split(",")[0].strip()
+            log.info(f"Detected a response for pullImage with sha {sha}")
+            # Try to obtain the image name from the sha
+            try:
+                image = os.popen(f"sudo crictl images --no-trunc | grep {sha} | sed -E 's/ +/:/g' | cut -f 1,2 -d :").read().strip()
+                log.info(f"SHA {sha} corresponds to image {image}")
+            except Exception as e:
+                log.error(f"Could not obtain image name from sha {sha}: {e}")
+                continue
 
-        # TODO implement removal of image from queue and duplicate detection
+            if image in queue:
+                queue.remove(image)
+                log.info(f"Removed {image} from queue")
+            else:
+                log.warning(f"Cound not find {image} in queue...")
+
+        elif "REQ" in line:
+            # Attempt to extract the json from the log line
+            try:
+                tmp = line.split("last-applied-configuration:")
+                tmp = tmp[1].split("}\n")[0].strip().replace("\\n", "").replace("\\", "").replace(" ", "")
+                # Try to count curly braces and terminate when the count is 0
+                ctcrl = 0
+                i = 0
+                while i < len(tmp):
+                    # print(f"current char: {tmp[i]}, i: {i}, ctcrl: {ctcrl}")
+                    if tmp[i] == "{":
+                        ctcrl += 1
+                    elif tmp[i] == "}":
+                        ctcrl -= 1
+                    if ctcrl == 0:
+                        break
+                    i += 1
+                tmp = tmp[:i + 1]
+            except IndexError:
+                log.error(f"Could not extract json from {line}")
+                continue
+            except Exception:
+                log.error(f"Unhandled exception while extracting json from {line}")
+                continue
+
+            # Attempt to convert said json to a dict
+            try:
+                js = json.loads(tmp)
+            except json.decoder.JSONDecodeError:
+                log.error(f"Could not decode json from {tmp}")
+                continue
+
+            image = js["spec"]["containers"][0]["image"]
+            log.info(f"Detected a request for pullImage with image {image}")
+
+            if image not in queue:
+                queue.append(image)
+                log.info(f"Added {image} to queue")
+            else:
+                log.info(f"{image} is already in queue, skipping")
+        else:
+            log.error("Malformed log line, skipping")
 
 def main(args):
     # One thread reads the file and keeps a list of all the images being pulled
     # Another thread runs the flask app and listens for alerts
     # If an alert is received, check if the image is in the list
     # If it is, brutally murder the containerd
-    log.basicConfig(level=log.INFO, format="%(asctime)s [%(levelname)s] - %(message)s")
+    log.basicConfig(level=log.INFO, format="%(asctime)s [%(levelname)s] {%(threadName)s} - %(message)s")
 
     file = args.snoopfile
 
@@ -129,9 +183,11 @@ def main(args):
 
     flask_thread = threading.Thread(target=run_flask)
     management_thread = threading.Thread(target=inspect_logs, args=(loglines,))
+    information_thread = threading.Thread(target=show_queue)
 
     flask_thread.start()
     management_thread.start()
+    information_thread.start()
 
 
 if __name__ == '__main__':

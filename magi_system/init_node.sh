@@ -51,25 +51,38 @@ echo "Rebooting kubelet, this may take a while..."
 systemctl stop kubelet
 (sleep 15 && systemctl start kubelet) &
 
+if pgrep "containerdsnoop" &>/dev/null; then
+    echo "Killing rogue containerdsnoop instances..."
+    pgrep "containerdsnoop" | xargs kill
+fi
+
 echo "Starting containerdsnoop..."
 containerdsnoop -complete_content >${LOG_FILE} 2>&1 &
 
 echo "Checking python3 requirements..."
-echo "By proceeding, you are installing the following packages:"
-cat requirements.txt
-echo "on this python environment:"
-echo $(which python3)
-python3 --version
-read -p "Do you want to proceed? [y/N] " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-    echo "Aborting..."
-    exit 1
+reqs=$(pip freeze -r requirements.txt 2>&1 | grep "Warning")
+if [[ ! -z "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
+    echo "Some python3 requirements are missing:"
+    echo "$reqs"
+
+    echo "By proceeding, you are installing the following packages:"
+    cat requirements.txt
+    echo "on this python environment:"
+    printf "%s @ %s\n" "$(python3 --version)" "$(which python3)"
+
+    read -p "Do you want to proceed? [y/N] " -n 1 -r
+    echo
+
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "Aborting..."
+        exit 1
+    fi
+
+    echo "Installing python3 requirements..."
+    pip3 install -r requirements.txt
+else
+    echo "All python3 requirements are satisfied."
 fi
-
-echo "Installing python3 requirements..."
-pip3 install -r requirements.txt
-
 # trap "exit" INT TERM ERR
 
 echo "Starting monitoring..."
