@@ -1,3 +1,5 @@
+__pycache__
+
 *.mp4
 registry_files
 certs
