@@ -83,6 +83,9 @@ def main(args: argparse.Namespace):
                     log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
                 handled[key]["status"] = 0b011
                 handled[key]["targetNode"] = js['requestObject']['target']['name']
+                if handled[key]["targetNode"] is None:
+                    log.error(f"Could not find target node for pod {key}")
+                    continue
                 log.info(f"Binding pod {key} response complete, target node: {handled[key]['targetNode']}")
             elif verb == "delete" and stage == "RequestReceived":
                 if handled[key]["status"] != 0b011:

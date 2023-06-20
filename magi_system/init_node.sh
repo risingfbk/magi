@@ -1,11 +1,14 @@
 #!/bin/bash
 
 LOG_FILE=/tmp/containerdsnoop.log
+IRUEL_LOG=/tmp/iruel.log
 
 if [[ "$UID" -ne 0 ]]; then
     echo "Please run as root."
     exit 1
 fi
+
+source ~/.bashrc
 
 # Assure that Go 1.20 is installed on the system
 install_go=0
@@ -58,6 +61,7 @@ fi
 
 echo "Starting containerdsnoop..."
 containerdsnoop -complete_content >${LOG_FILE} 2>&1 &
+pid=$!
 
 echo "Checking python3 requirements..."
 reqs=$(pip freeze -r requirements.txt 2>&1 | grep "Warning")
@@ -85,11 +89,28 @@ else
 fi
 # trap "exit" INT TERM ERR
 
-echo "Starting monitoring..."
-python3 node.py --snoopfile ${LOG_FILE} --listen-port 22333
+echo "Checking if bbolt is installed..."
+if command -v bbolt &>/dev/null; then
+    echo "bbolt is installed"
+else
+    if [[ -f "/home/vagrant/go/bin/bbolt" ]]; then
+        echo "bbolt is installed but not in the path, adding..."
+        echo 'export PATH=$PATH:/home/vagrant/go/bin' >>~/.bashrc
+        source ~/.bashrc
+    else
+        echo "bbolt is not installed, installing..."
+        go install go.etcd.io/bbolt/cmd/bbolt@latest
+    fi
+fi
 
-# &> ${LOG_FILE} # &
-# echo "Waiting for containerdsnoop to start..."
-# sleep 15
-# rip="$(pgrep "main|socat" | tr '\n' ' ')"
-# echo "To terminate everything: kill $rip"
+echo "Invoking Iruel..."
+./iruel.sh &
+pid="$pid $!"
+
+echo "Starting monitoring..."
+python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
+pid="$pid $!"
+
+trap "kill -9 $pid" INT TERM ERR
+
+echo "To terminate everything: kill -9 $pid"
