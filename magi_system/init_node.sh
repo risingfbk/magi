@@ -8,11 +8,11 @@ if [[ "$UID" -ne 0 ]]; then
     exit 1
 fi
 
-source ~/.bashrc
+source $HOME/.bashrc
 
 # Assure that Go 1.20 is installed on the system
 install_go=0
-if command -v go &>/dev/null; then
+if which go &>/dev/null; then
     # Check version
     if [[ $(go version) =~ "go1.20" ]]; then
         echo "Go 1.20 is installed"
@@ -24,8 +24,7 @@ else
     # Check if go is installed but not in the path
     if [[ -f "/usr/local/go/bin/go" ]]; then
         echo "Go is installed but not in the path, adding..."
-        echo 'export PATH=$PATH:/usr/local/go/bin' >>~/.bashrc
-        source ~/.bashrc
+        export PATH=$PATH:/usr/local/go/bin
     else
         echo "Go is not installed..."
         install_go=1
@@ -90,13 +89,12 @@ fi
 # trap "exit" INT TERM ERR
 
 echo "Checking if bbolt is installed..."
-if command -v bbolt &>/dev/null; then
+if which bbolt &>/dev/null; then
     echo "bbolt is installed"
 else
     if [[ -f "/home/vagrant/go/bin/bbolt" ]]; then
         echo "bbolt is installed but not in the path, adding..."
-        echo 'export PATH=$PATH:/home/vagrant/go/bin' >>~/.bashrc
-        source ~/.bashrc
+        export PATH=$PATH:/home/vagrant/go/bin
     else
         echo "bbolt is not installed, installing..."
         go install go.etcd.io/bbolt/cmd/bbolt@latest
@@ -109,8 +107,6 @@ pid="$pid $!"
 
 echo "Starting monitoring..."
 python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
-pid="$pid $!"
 
-trap "kill -9 $pid" INT TERM ERR
-
-echo "To terminate everything: kill -9 $pid"
+echo "Cleaning up..."
+kill -TERM $pid

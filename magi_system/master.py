@@ -90,6 +90,9 @@ def main(args: argparse.Namespace):
             elif verb == "delete" and stage == "RequestReceived":
                 if handled[key]["status"] != 0b011:
                     log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
+                if handled[key]['targetNode'] is None:
+                    log.error(f"Could not find target node for pod {key}, cannot send alert")
+                    continue
                 # *siren noises*
                 log.info(f"Sending alert to {handled[key]['targetNode']} with image {handled[key]['image']}")
                 try:
