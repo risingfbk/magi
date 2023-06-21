@@ -13,7 +13,6 @@
 
 # Extract PID and hash from strace output
 
-
 if [[ "$UID" -ne 0 ]]; then
   echo "Please run as root"
   exit 1
@@ -22,52 +21,55 @@ fi
 TMPFILE="$(mktemp)"
 rm -rf /tmp/iruel.log && touch /tmp/iruel.log
 
-sudo strace -fp $(pgrep containerd$) &> $TMPFILE &
+sudo strace -fp $(pgrep containerd$) -o $TMPFILE &
 writer=$!
 trap "kill $writer; rm -rf $TMPFILE" SIGTERM
 
 function parse() {
-    line="$1"
-    echo "$line" # >> /tmp/iruel.log
-    pid="$(echo $line | cut -f 1 -d " ")"
-    hash="$(echo $line | cut -f 2 -d " ")"
-    sha="$(cat /var/lib/containerd/io.containerd.content.v1.content/ingest/$hash/ref 2>/dev/null)"
-    sleep 5
-    if [[ -n "$sha" ]]; then
-        sha="$(echo $sha | rev | cut -f 1 -d : | rev)"
-        # Select all between the first /ref and the next /ref. we don't know the next $hash, just that there is a /ref
-        second_line=$(cat $TMPFILE | grep --color=never "$pid" | grep --color=never "$hash/ref" -A 1000000 \
-             | grep --color=never "getsockname")
-        echo "$second_line" # >> /tmp/iruel.log
-        sin_ports=$(echo "$second_line" | grep -oE "sin_port=htons\(([0-9]+)\)" | cut -f 2 -d "(" | cut -f 1 -d ")")
-        #sin_addrs=$(echo "$second_line" | grep -oE "sin_addr=inet_addr\(\"([0-9\.]+)\"\)" | cut -f 2 -d "(" | cut -f 1 -d ")" | cut -f 2 -d "\"")
-        printf "%s" "$sin_ports" | while read port; do
-            echo "$pid,$sha,,$port,," # >> /tmp/iruel.log
+    mapping=$1
+    echo "Mapping: $mapping"
+    pid=$(echo $mapping | cut -f 1 -d ",")
+    layers="$(cat $TMPFILE | grep --color=never --line-buffered $pid | grep --color=never --line-buffered -oE ".content/ingest/.*?/.*" | cut -f 3 -d / | uniq)"
+
+    shas=""
+    i=0
+    while [[ -z "$shas" || "$shas" == " " ]]; do
+        shas="$(echo $layers | tr ',' '\n' | xargs -I {} cat /var/lib/containerd/io.containerd.content.v1.content/ingest/{}/ref 2>/dev/null || echo '')"
+        sleep 0.1
+        i=$((i+1))
+        if [[ "$i" -gt 100 ]]; then
+            echo "Failed to find shas for $(echo $layers | tr '\n' ',')"
+            exit 1
+        fi
+    done
+
+    fd_req=$(echo $mapping | cut -f 2 -d ",")
+    dport=$(echo $mapping | cut -f 3 -d ",")
+    daddr=$(echo $mapping | cut -f 4 -d ",")
+
+    localmaps=$(cat $TMPFILE | grep --color=never --line-buffered -E "getsockname" \
+        | grep --color=never --line-buffered AF_INET -B 1 | tr '\n' '~' | sed "s/>~\[/>[/g" | sed -E "s/>~([0-9]+) </>\1 </g" | tr "~" "\n" \
+        | grep --color=never --line-buffered -oE "(^\[pid +|^)([0-9]+)(\])?.*getsockname\($fd_req,.*?sin_port=htons\(([0-9]+)\),.*?sin_addr=inet_addr\(\"([0-9\.]+)\"\)" \
+        | sed -u --regexp-extended 's/(^\[pid +|^)([0-9]+)(\])?.*getsockname\(([0-9]+).*port=htons\(([0-9]+)\).*inet_addr\("([0-9\.]+)"\).*$/\4 \5 \6/g' \
+        | tr ' ' ',')
+    for sha in $shas; do
+        for map in $localmaps; do
+            fd=$(echo $map | cut -f 1 -d ",")
+            sport=$(echo $map | cut -f 2 -d ",")
+            saddr=$(echo $map | cut -f 3 -d ",")
+            echo "$pid,$fd,$sport,$saddr,$dport,$daddr,$(echo $sha | rev | cut -f 1 -d : | rev)"
         done
-    fi
+    done
 }
 
 tail --follow=name $TMPFILE \
-    | $(which grep) --line-buffered --color=never \
-        -E "openat.*/var/lib/containerd/io.containerd.content.v1.content/ingest/.*/ref" \
-    | sed -u --regexp-extended 's/.*\[pid ([0-9]+)\].*ingest\/(.*?)\/ref".*/\1 \2/g' | while read line; do
-    if [[ -z "$line" ]]; then
+        | grep --color=never --line-buffered -E "connect\(" | grep --color=never --line-buffered AF_INET | grep --color=never --line-buffered -v "htons(53)" \
+        | grep --color=never --line-buffered -oE "(^\[pid +|^)([0-9]+)(\])?.*connect\(([0-9]+),.*?sin_port=htons\(([0-9]+)\),.*?sin_addr=inet_addr\(\"([0-9\.]+)\"\)" \
+        | sed -u --regexp-extended 's/(^\[pid +|^)([0-9]+)(\])?.*connect\(([0-9]+).*port=htons\(([0-9]+)\).*inet_addr\("([0-9\.]+)"\).*$/\2 \4 \5 \6/g' \
+        | grep --color=never --line-buffered -vE "^(.*?) (.*?) 53 (.*?)" | while read line; do
+    if [[ -z "$line" || "$line" == "" ]]; then
         continue
     fi
+    line=$(echo $line | tr ' ' ',')
     parse "$line" &
 done
-
-# Old method, using FDs
-
-# second_line=$(cat $TMPFILE | grep --color=never "$pid" |
-# grep --color=never "$hash" -A 10000 | grep --color=never -v "127.0.0.53" |
-# $(which grep) --line-buffered --color=never -E "connect\(.*?, \{" |
-# sed -u --regexp-extended 's/connect\(([0-9]+).*port=htons\(([0-9]+)\).*inet_addr\("([0-9\.]+)"\).*$/\1 \2 \3/g')
-# fd="$(echo $second_line | cut -f 3 -d " ")"
-# dst_port="$(echo $second_line | cut -f 2 -d " ")"
-# dst_ip="$(echo $second_line | cut -f 1 -d " ")"
-# if [[ -n "$fd" ]]; then
-    # COMMAND      PID USER   FD   TYPE    DEVICE SIZE/OFF NODE NAME
-    # container 420038 root   18u  IPv4 319703123      0t0  TCP worker2:49716->10.231.0.208:https (ESTABLISHED)
-    #port=$(lsof -i -a -p $(pgrep containerd$) | grep ${fd}u | awk '{print $9}' | cut -f 2 -d ":" | cut -f 1 -d "-")
-    # echo "PID $pid is downloading sha256:$sha on FD $fd. Would kill port $port"
