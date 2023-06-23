@@ -18,30 +18,20 @@ if [[ "$UID" -ne 0 ]]; then
   exit 1
 fi
 
-TMPFILE="$(mktemp)"
 rm -rf /tmp/iruel.log && touch /tmp/iruel.log
 
-sudo strace -fp $(pgrep containerd$) -o $TMPFILE &
+TMPFILE="$(mktemp)"
+sudo strace -fp $(pgrep containerd$) -o $TMPFILE &> /dev/null &
 writer=$!
 trap "kill $writer; rm -rf $TMPFILE" SIGTERM
 
 function parse() {
     mapping=$1
-    echo "Mapping: $mapping"
     pid=$(echo $mapping | cut -f 1 -d ",")
-    layers="$(cat $TMPFILE | grep --color=never --line-buffered $pid | grep --color=never --line-buffered -oE ".content/ingest/.*?/.*" | cut -f 3 -d / | uniq)"
-
-    shas=""
-    i=0
-    while [[ -z "$shas" || "$shas" == " " ]]; do
-        shas="$(echo $layers | tr ',' '\n' | xargs -I {} cat /var/lib/containerd/io.containerd.content.v1.content/ingest/{}/ref 2>/dev/null || echo '')"
-        sleep 0.1
-        i=$((i+1))
-        if [[ "$i" -gt 100 ]]; then
-            echo "Failed to find shas for $(echo $layers | tr '\n' ',')"
-            exit 1
-        fi
-    done
+    layers="$(cat $TMPFILE | grep --color=never --line-buffered $pid \
+        | grep --color=never --line-buffered -oE ".content/ingest/.*?/.*" | cut -f 3 -d / | uniq \
+        | sed -E 's|^(.*)$|/var/lib/containerd/io.containerd.content.v1.content/ingest/\1/ref|g' \
+        | xargs -I {} awk '{print $0}' {} 2>/dev/null | cut -f 2 -d :)"
 
     fd_req=$(echo $mapping | cut -f 2 -d ",")
     dport=$(echo $mapping | cut -f 3 -d ",")
@@ -52,12 +42,12 @@ function parse() {
         | grep --color=never --line-buffered -oE "(^\[pid +|^)([0-9]+)(\])?.*getsockname\($fd_req,.*?sin_port=htons\(([0-9]+)\),.*?sin_addr=inet_addr\(\"([0-9\.]+)\"\)" \
         | sed -u --regexp-extended 's/(^\[pid +|^)([0-9]+)(\])?.*getsockname\(([0-9]+).*port=htons\(([0-9]+)\).*inet_addr\("([0-9\.]+)"\).*$/\4 \5 \6/g' \
         | tr ' ' ',')
-    for sha in $shas; do
+    for layer in $layers; do
         for map in $localmaps; do
             fd=$(echo $map | cut -f 1 -d ",")
             sport=$(echo $map | cut -f 2 -d ",")
             saddr=$(echo $map | cut -f 3 -d ",")
-            echo "$pid,$fd,$sport,$saddr,$dport,$daddr,$(echo $sha | rev | cut -f 1 -d : | rev)"
+            echo "$pid,$fd,$sport,$saddr,$dport,$daddr,$layer" >> /tmp/iruel.log
         done
     done
 }

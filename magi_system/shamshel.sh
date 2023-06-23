@@ -2,6 +2,7 @@
 
 SHAFOLDER="/var/lib/containerd/io.containerd.content.v1.content/blobs/sha256"
 DBFILE="/var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
+BBOLT="/home/vagrant/go/bin/bbolt"
 
 if [[ "$UID" -ne 0 ]]; then
   echo "Please run as root"
@@ -24,11 +25,11 @@ for i in $files; do
         # Temporarily copy the file to avoid "database is locked" error
         tmp=$(mktemp)
         cp $DBFILE $tmp
-        target_key=$(bbolt keys $tmp v1 k8s.io content blob sha256:$manifest labels | grep distribution.source)
+        target_key=$($BBOLT keys $tmp v1 k8s.io content blob sha256:$manifest labels | grep distribution.source)
         # Some images may not have a source label (yet)
         if [[ -n "$target_key" ]]; then
             repo=$(echo $target_key | sed 's|containerd.io/distribution.source.||g')
-            name=$(bbolt get $tmp v1 k8s.io content blob sha256:$manifest labels $target_key)
+            name=$($BBOLT get $tmp v1 k8s.io content blob sha256:$manifest labels $target_key)
             jq -cMn --arg layers "$layers" --arg manifest "$manifest" --arg repo "$repo" \
                     --arg name "$name" --arg time "$time" \
                     '{layers: $layers | split(","), manifest: $manifest, repo: $repo, name: $name, time: $time}'

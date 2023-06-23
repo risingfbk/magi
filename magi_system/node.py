@@ -42,12 +42,17 @@ def show_queue():
 
 
 def port_mappings(iruellines):
-    # lines: "$pid,$sha,$fd,$port,$dst_ip,$dst_port"
     for line in iruellines:
         try:
-            _, sha, _, port, *_ = line.split(",")
-            ports[sha] = port
-            log.debug(f"Iruel reports layer {sha} is being downloaded on port {port}")
+            # "$pid,$fd,$sport,$saddr,$dport,$daddr,$layer"
+            pid, _, port, _, _, _, layer = line.split(",")
+            port = int(port)
+            layer = layer.strip()
+            if layer not in ports:
+                ports[layer] = [port]
+            else:
+                ports[layer].append(port)
+            log.info(f"Iruel reports layer {layer} is being downloaded on port {port}")
         except ValueError:
             log.error(f"Could not parse line {line}")
             continue
@@ -93,17 +98,20 @@ def terminate_download(image):
     log.info(f"Terminating download of image {image} from node {node_source} using registry {registry_ip}")
 
     # Obtain ports to terminate. Try it 4 times, waiting 3 seconds between each try
-    for _ in range(4):
-        for layer in layer_hashes:
-            if layer not in ports:
-                continue
-            layer_port = ports[layer]
+    #for _ in range(4):
+    for layer in layer_hashes:
+        if layer not in ports:
+            log.warning(f"Layer {layer} not found in ports (ports: {ports})")
+            continue
+        layer_ports = ports[layer]
+        for layer_port in layer_ports:
             command = f"ss -K src {node_source} sport = {layer_port}"
             result = os.popen(command).read().strip()
             # if results more than 1 line then something was killed
             if len(result.split("\n")) > 1:
-                log.info(f"Terminating download of layer {layer} on port {layer_port}")  # log.info(f"Result: {result}")
-        sleep(3)
+                log.info(f"Terminated download of layer {layer} on port {layer_port}")  # log.info(f"Result: {result}")
+        ports[layer] = []  # Empty ports for this layer
+    # sleep(3)
 
     # command = f'netstat -apeen | grep $(pgrep containerd | xargs ps | grep "containerd$" | ' \
     #           f'cut -f 1 -d " ")/containerd | grep tcp | grep {registry_ip} | sed -E " s/ +/ /g" | ' \
