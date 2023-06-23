@@ -1,6 +1,24 @@
 # README
 
-## Preliminaries
+This repository contains the following folders:
+
+- `cluster`: contains the Vagrantfile used to create the cluster;
+- `registry`: contains the Vagrantfile and docker-compose files used to create the registry;
+- `kfiles`: contains the Kubernetes manifests used in the experiments;
+- `magi_system`: contains the MAGI system, our PoC implementation of the mitigation system;
+- `results`: contains the results and the plots of the experiments.
+
+In the root folder, you will furthermore find some helper scripts we used for exporting data from the cluster and the registry and for plotting the results.
+
+## Usage
+
+For replicating the experiments, first deploy the cluster and the registry, either on your own or by using the instructions that follow in this README. Once it is ready, deploy the MAGI system on the cluster by using the README file in the corresponding folder. Once the MAGI system is deployed, you can run the experiments by using the YAML files in the `kfiles` folder. 
+
+## Installation
+
+### Preliminaries
+
+The installation requires a Linux system with virtualization capabilities. Our experiments were conducted on a machine running Ubuntu 20.04.1 LTS. The following instructions are for Ubuntu, but they should be easily adaptable to other distributions.
 
 - The Vagrant machines use libvirt. Make sure libvirt is installed on your system:
 
@@ -32,7 +50,7 @@ sudo apt-get install nfs-kernel-server
 sudo systemctl start nfs-kernel-server
 ```
 
-## Cluster
+### Cluster
 
 Before starting, make sure you either change the IPs in the `Vagrantfile` or apply the provided `virsh` network configuration. The latter is the preferred option, as it will create a bridge interface on which the cluster will operate.
 
@@ -46,8 +64,7 @@ For your convenience, a copy of the `node_exporter` binary is provided in the `.
 Each machine has an NFS share mounted in `/vagrant` that can be used to share files between the host and the VMs. Indeed, it is used to share a `join.sh` script that can be used to join the worker nodes to the cluster. Once finished, you may want to remove it.
 Once finished, Vagrant will spit out a `config` file that can be used to interact with the cluster using `kubectl`. Please move it to `$HOME/.kube/config` and use it to interact with the cluster.
 
-
-## Registry
+### Registry
 
 Handling the registry is trickier as it requires some manual steps. Indeed, k8s and Docker strongly dislike self-signed certificates.
 First of all, run the `Vagrantfile` and make sure the registry VM is up and running. In alternative, you may boot up another VM or use a physical machine, installing Docker and Docker Compose on it.
@@ -132,7 +149,11 @@ After having pushed something, verify the contents of the registry:
 curl -X GET -u testuser:testpassword https://${REGISTRY_IP_DOMAIN}/v2/_catalog
 ```
 
-## k8s v1.27 Parallel Image Pulls
+## Modifications to the cluster
+
+### k8s v1.27 Parallel Image Pulls
+
+In Kubernetes v1.27, there is an option for parallel image pulls. This option is not enabled by default. To enable it, you need to edit the `kubelet-config` configmap in the `kube-system` namespace. Then, you need to restart the kubelet on each node. This can be done with the following commands:
 
 ```shell
 kubectl edit cm -n kube-system kubelet-config
