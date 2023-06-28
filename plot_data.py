@@ -7,6 +7,8 @@ import os
 import datetime
 
 avail = os.listdir('results/')
+avail.remove('.DS_Store') if '.DS_Store' in avail else None
+
 directory = input(f"Which directory do you want to plot? {avail} ")
 if directory not in avail:
     print("Invalid directory, exiting...")
@@ -161,6 +163,7 @@ def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str
     ax.set_xticks(ticks)
     ax.set_xticklabels(labels)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
+    ax.set_ylim([-0.01, 175])
 
     ax.set_xlabel('Time')
     ax.set_ylabel(MAPPINGS[plot]['ylabel'])
@@ -231,7 +234,6 @@ def plot_worker2cpu(df: pd.DataFrame, plot: str):
     # Save the figure
     plt.tight_layout()
     plt.savefig(PLOT_DIR + '/' + plot + '.png')
-
 
 
 def main():
