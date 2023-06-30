@@ -4,6 +4,7 @@ STYX=/home/ubuntu/.asdf/installs/golang/1.20.4/packages/bin/styx
 QUERIES=prometheus_queries
 EXPORT_FOLDER=temp_data
 
+mkdir -p $EXPORT_FOLDER
 TS=${1:-'2023-05-19T07:08:20'}
 DURATION=${2-:16m}
 
