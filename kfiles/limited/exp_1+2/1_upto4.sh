@@ -16,4 +16,4 @@ kubectl apply -f 5gb-4.yaml
 sleep 2
 kubectl delete -f 5gb-4.yaml --force --grace-period=0
 sleep 2
-kubectl apply -f httpd.yaml
+kubectl apply -f ../httpd.yaml
