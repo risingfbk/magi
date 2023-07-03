@@ -6,13 +6,24 @@ import matplotlib.dates as mdates
 import os
 import datetime
 
-avail = os.listdir('results/')
-avail.remove('.DS_Store') if '.DS_Store' in avail else None
+subs = os.listdir('results/')
+avail = []
+for x in subs:
+    if x == '.DS_Store':
+        continue
+    subs2 = os.listdir(f'results/{x}')
+    for y in subs2:
+        if os.path.isdir(f'results/{x}/{y}') and y != '.DS_Store':
+            avail.append(f'{x}/{y}')
 
-directory = input(f"Which directory do you want to plot? {avail} ")
-if directory not in avail:
+for i in range(1, len(avail) + 1):
+    print(f"{i}: {avail[i - 1]}")
+directory = input(f"Which directory do you want to plot? ")
+if not directory.isdigit():
     print("Invalid directory, exiting...")
     exit()
+directory = avail[int(directory) - 1]
+print(f"Plotting {directory}...")
 
 DATA_DIR = f'results/{directory}/data'
 PLOT_DIR = f'results/{directory}/plots'
@@ -97,7 +108,7 @@ def plot_normal(df: pd.DataFrame, plot: str):
         ticks.append(i)
         labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, rotation=45)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
 
     # ax.xaxis.set_major_locator(mdates.SecondLocator(interval=60))
@@ -161,7 +172,7 @@ def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str
         ticks.append(i)
         labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, rotation=45)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
     ax.set_ylim([-0.01, 175])
 
@@ -220,7 +231,7 @@ def plot_worker2cpu(df: pd.DataFrame, plot: str):
         ticks.append(i)
         labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels)
+    ax.set_xticklabels(labels, rotation=45)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
     ax.set_ylim(0, 100)
 
