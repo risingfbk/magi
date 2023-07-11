@@ -14,6 +14,7 @@ app = Flask(__name__)
 queue = []
 ports = {}
 
+watch_mode = False
 
 @app.route('/alert', methods=['POST'])
 def alert():
@@ -59,6 +60,9 @@ def port_mappings(iruellines):
 
 
 def terminate_download(image):
+    if watch_mode:
+        return
+
     image_fullname, tag = image.split(":")
     splt = image_fullname.split("/")
     if len(splt) == 2:  # image is from dockerhub
@@ -231,6 +235,9 @@ def main(args):
     # If it is, brutally murder the containerd
     log.basicConfig(level=log.INFO, format="%(asctime)s [%(levelname)s] {%(threadName)s} - %(message)s")
 
+    if args.watch_mode:
+        watch_mode = True
+
     snoopfile = args.snoopfile
     iruelfile = args.iruelfile
 
@@ -261,5 +268,6 @@ if __name__ == '__main__':
     parser.add_argument("-I", "--iruelfile", help="File from Iruel", required=True)
     parser.add_argument("-t", "--test", help="Test mode", action="store_true")
     parser.add_argument("-i", "--interactive-test", help="Interactive test mode", action="store_true")
+    parser.add_argument("-w", "--watch-mode", help="Watch mode", action="store_true")
     arguments = parser.parse_args()
     main(arguments)
