@@ -53,7 +53,7 @@ def port_mappings(iruellines):
                 ports[layer] = [port]
             else:
                 ports[layer].append(port)
-            log.info(f"Iruel reports layer {layer} is being downloaded on port {port}")
+            log.debug(f"Iruel reports layer {layer} is being downloaded on port {port}")
         except ValueError:
             log.error(f"Could not parse line {line}")
             continue
@@ -168,12 +168,13 @@ def inspect_logs(loglines):
             # containerd     1415023 3409742 3416218 RESP   33     /runtime.v1.ImageService/PullImage
             # "&PullImageResponse{ImageRef:sha256:cfb479bb8ac9e4d1b941d04baf842bd392ebfcab62d292f9006f2a56edb7e9d6,}"
             sha = line.lower().split("imageref:sha256:")[1].split(",")[0].strip()
-            log.info(f"Detected a response for pullImage with sha {sha}")
+            log.debug(f"Detected a response for pullImage with sha {sha}")
             # Try to obtain the image name from the sha
             try:
                 image = os.popen(
                     f"sudo crictl images --no-trunc | grep {sha} | sed -E 's/ +/:/g' | cut -f 1,2 -d :").read().strip()
-                log.info(f"SHA {sha} corresponds to image {image}")
+                log.debug(f"SHA {sha} corresponds to image {image}")
+                log.info(f"Detected a response for pullImage with image {image}")
             except Exception as e:
                 log.error(f"Could not obtain image name from sha {sha}: {e}")
                 continue
@@ -181,42 +182,31 @@ def inspect_logs(loglines):
             if image in queue:
                 queue.remove(image)
                 log.info(f"Removed {image} from queue")
+            elif "docker.io/library/" in image:
+                # This is a docker image, try to remove the prefix
+                image = image.split("docker.io/library/")[1]
+                if image in queue:
+                    queue.remove(image)
+                    log.info(f"Removed {image} from queue")
+                else:
+                    log.warning(f"Cound not find {image} in queue...")
             else:
                 log.warning(f"Cound not find {image} in queue...")
 
         elif "REQ" in line:
             # Attempt to extract the json from the log line
             try:
-                tmp = line.split("last-applied-configuration:")
-                tmp = tmp[1].split("}\n")[0].strip().replace("\\n", "").replace("\\", "").replace(" ", "")
-                # Try to count curly braces and terminate when the count is 0
-                ctcrl = 0
-                i = 0
-                while i < len(tmp):
-                    # print(f"current char: {tmp[i]}, i: {i}, ctcrl: {ctcrl}")
-                    if tmp[i] == "{":
-                        ctcrl += 1
-                    elif tmp[i] == "}":
-                        ctcrl -= 1
-                    if ctcrl == 0:
-                        break
-                    i += 1
-                tmp = tmp[:i + 1]
+                # Find the "{Image:" part
+                image = ":".join(line.split("{Image:&ImageSpec")[1].split(",")[0].split(":")[1:])
             except IndexError:
-                log.error(f"Could not extract json from {line}")
+                with open("indexerror.log", "a+") as f:
+                    f.write(line)
+                log.error(f"Could not extract json from the line. See indexerror.log")
                 continue
             except Exception:
                 log.error(f"Unhandled exception while extracting json from {line}")
                 continue
 
-            # Attempt to convert said json to a dict
-            try:
-                js = json.loads(tmp)
-            except json.decoder.JSONDecodeError:
-                log.error(f"Could not decode json from {tmp}")
-                continue
-
-            image = js["spec"]["containers"][0]["image"]
             log.info(f"Detected a request for pullImage with image {image}")
 
             if image not in queue:
