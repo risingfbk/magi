@@ -10,5 +10,5 @@ COPY sample-foot.html /usr/local/apache2/htdocs/public-html
 COPY sample-head.html /usr/local/apache2/htdocs/public-html
 WORKDIR /usr/local/apache2/htdocs/public-html
 RUN cat sample-head.html > index.html && \
-    lorem -c 500000 >> index.html && \
+    lorem -c 1000000 >> index.html && \
     cat sample-foot.html >> index.html
