@@ -8,11 +8,11 @@ cat << EOF > "$name"
 apiVersion: v1
 kind: Pod
 metadata:
-  name: randomgb-$i
+  name: randommb-$i
   namespace: limited
 spec:
   containers:
-  - name: randomgb
+  - name: randommb
     image: registry-10-231-0-208.nip.io/mfranzil/randommb:$i
 EOF
     kubectl apply -f "$name"
