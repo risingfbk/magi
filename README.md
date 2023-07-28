@@ -117,24 +117,34 @@ vagrant scp ./certs/domain.crt worker1:domain.crt
 vagrant scp ./certs/domain.crt worker2:domain.crt
 ```
 
-Some final steps:
+and update the certificates on each node:
 
-- Perform `sudo cp $HOME/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd` on each node
-  - (optional) do the same on the host machine: `(cp ./certs/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates`
-- Copy the certificate in the host machine:
+```shell
+vagrant ssh master -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+vagrant ssh worker1 -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+vagrant ssh worker2 -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+```
+
+Finally, update the host machine certificates:
+
+```shell
+cp ./certs/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates
+```
+
+On the host machine, we will also copy the certificate to the Docker certificates directory. This will allow us to perform a `docker login` with no errors.
 
 ```shell
 sudo mkdir -p /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/
 sudo cp /home/vbox/kubetests/certs/domain.crt /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/ca.crt
 ```
 
-- Perform a `docker login` and check that everything is ok (testuser:testpassword)
+Now, perform a `docker login` and check that everything is ok (default credentials: `testuser:testpassword`):
 
 ```shell
 docker login ${REGISTRY_IP_DOMAIN}
 ```
 
-Finally, we can create the k8s secret from the CA cert:
+Finally, we can create the k8s secret from the CA cert and apply it to our namespace, saving us from having to include it in every YAML file.
 
 ```shell
 kubectl create secret generic regcred \
