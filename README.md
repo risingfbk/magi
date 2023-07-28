@@ -169,10 +169,12 @@ In Kubernetes v1.27, there is an option for parallel image pulls. This option is
 kubectl edit cm -n kube-system kubelet-config
 ```
 
-Add the `maxParallelImagePulls: 1` and `serializeImagePulls: false` options. Then, on each node:
+Add the `maxParallelImagePulls: 1` and `serializeImagePulls: false` options. Then:
 
 ```shell
-sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet
+vagrant ssh master -c "sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet"
+vagrant ssh worker1 -c "sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet"
+vagrant ssh worker2 -c "sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet"
 ```
 
 ## References

@@ -1,6 +1,7 @@
 #!/bin/zsh
 
-cutoff=(650 556 510 1165 965 853 947 715 702)
+# cutoff for 5gb 4 images, 5gb 7 images, randomgb 7 images, 40 images; order 1 2 4
+cutoff=(650 556 510 1165 965 853 947 715 702 448 337 319)
 
 j=0
 for i in $(find ${1:-.} -type f -name "worker2cpu" | sort); do
