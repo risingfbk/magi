@@ -8,7 +8,7 @@ cat << EOF > "$name"
 apiVersion: v1
 kind: Pod
 metadata:
-  name: randomgb-1
+  name: randomgb-$i
   namespace: limited
 spec:
   containers:
