@@ -9,3 +9,6 @@ temp_data
 .vagrant
 .idea
 logs
+
+kfiles/images/randommb/Dockerfile
+kfiles/images/randomgb/Dockerfile
