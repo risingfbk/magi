@@ -1,9 +1,0 @@
-apiVersion: v1
-kind: Pod
-metadata:
-  name: randomgb-3
-  namespace: limited
-spec:
-  containers:
-  - name: randomgb
-    image: registry-10-231-0-208.nip.io/mfranzil/randomgb:3

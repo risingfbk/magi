@@ -12,3 +12,4 @@ logs
 
 kfiles/images/randommb/Dockerfile
 kfiles/images/randomgb/Dockerfile
+kfiles/limited/exp*/*-generated.yml
