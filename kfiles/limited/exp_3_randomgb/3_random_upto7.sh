@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # Randomize the order of the pods
-for i in $(seq 1 | shuf); do
+for i in $(seq 1 7 | shuf); do
     echo "Applying $i"
-    name="randommb-$i.yml"
+    name="randommb-$i-generated.yml"
 cat << EOF > "$name"
 apiVersion: v1
 kind: Pod
 metadata:
-  name: randomgb-1
+  name: randomgb-$i
   namespace: limited
 spec:
   containers:
