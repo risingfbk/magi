@@ -5,28 +5,8 @@ import seaborn as sns
 import matplotlib.dates as mdates
 import os
 import datetime
-
-subs = os.listdir('results/')
-avail = []
-for x in subs:
-    if x == '.DS_Store':
-        continue
-    subs2 = os.listdir(f'results/{x}')
-    for y in subs2:
-        if os.path.isdir(f'results/{x}/{y}') and y != '.DS_Store':
-            avail.append(f'{x}/{y}')
-
-for i in range(1, len(avail) + 1):
-    print(f"{i}: {avail[i - 1]}")
-directory = input(f"Which directory do you want to plot? ")
-if not directory.isdigit():
-    print("Invalid directory, exiting...")
-    exit()
-directory = avail[int(directory) - 1]
-print(f"Plotting {directory}...")
-
-DATA_DIR = f'results/{directory}/data'
-PLOT_DIR = f'results/{directory}/plots'
+import argparse
+import json
 
 MAPPINGS = {
     'cpu': {
@@ -63,19 +43,34 @@ MAPPINGS = {
     }
 }
 
+WINDOW = 10
+DEFAULT_DIR = "temp_data"
+WORKER2_REPLACEMENTS = {
+    '{mode="idle"}': 'Idle',
+    '{mode="iowait"}': 'IOWait',
+    '{mode="irq"}': 'IRQ',
+    '{mode="nice"}': 'Nice',
+    '{mode="softirq"}': 'SoftIRQ',
+    '{mode="steal"}': 'Steal',
+    '{mode="system"}': 'System',
+    '{mode="user"}': 'User',
+}
 
-def plot_normal(df: pd.DataFrame, plot: str):
+DISKNETWORK_REPLACEMENTS = {
+    '{instance="192.168.221.10:9100"}': 'Master',
+    '{instance="192.168.221.11:9100"}': 'Worker1',
+    '{instance="192.168.221.12:9100"}': 'Worker2',
+    '{instance="10.231.0.208:9100"}': 'Registry',
+    '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
+    '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
+    '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
+    '{instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
+}
+
+
+def plot_normal(df: pd.DataFrame, plot: str, plot_dir: str):
     df.rename(
-        columns={
-            '{instance="192.168.221.10:9100"}': 'Master',
-            '{instance="192.168.221.11:9100"}': 'Worker1',
-            '{instance="192.168.221.12:9100"}': 'Worker2',
-            '{instance="10.231.0.208:9100"}': 'Registry',
-            '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
-            '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
-            '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
-            '{instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
-        },
+        columns=DISKNETWORK_REPLACEMENTS,
         inplace=True
     )
 
@@ -114,7 +109,7 @@ def plot_normal(df: pd.DataFrame, plot: str):
     # ax.xaxis.set_major_locator(mdates.SecondLocator(interval=60))
     # ax.xaxis.set_major_formatter(mdates.DateFormatter('%H:%M'))
 
-    print(df.head())
+    # print(df.head())
 
     # plt.gcf().autofmt_xdate()
 
@@ -125,24 +120,21 @@ def plot_normal(df: pd.DataFrame, plot: str):
 
     # Save the figure
     plt.tight_layout()
-    plt.savefig(PLOT_DIR + '/' + plot + '.png')
+    plt.savefig(plot_dir + '/' + plot + '.png')
+    plt.close()
 
 
-def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str):
+def plot_disk_network(df_disk: pd.DataFrame,
+                      df_network: pd.DataFrame,
+                      plot_name: str,
+                      seconds: int,
+                      cutoff_seconds: int,
+                      plot_dir: str):
     for df in (df_disk, df_network):
         df["Time"].apply(pd.to_timedelta, unit='s')
         df["Time"] = df["Time"] - df["Time"].iloc[0]
         df.rename(
-            columns={
-                '{instance="192.168.221.10:9100"}': 'Master',
-                '{instance="192.168.221.11:9100"}': 'Worker1',
-                '{instance="192.168.221.12:9100"}': 'Worker2',
-                '{instance="10.231.0.208:9100"}': 'Registry',
-                '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
-                '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
-                '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
-                '{instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
-            },
+            columns=DISKNETWORK_REPLACEMENTS,
             inplace=True
         )
     # Merge the two df by creating a new df (time, disk, network) of only worker2
@@ -156,6 +148,13 @@ def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str
         inplace=True
     )
 
+    for column in df.columns[1:]:
+        df[column] = df[column].rolling(WINDOW, min_periods=1).mean()
+
+    # Trim the table at the cutoff if passed
+    if cutoff_seconds is not None and cutoff_seconds > 0:
+        df = df[df['Time'] <= cutoff_seconds]
+
     df['Disk'] = df['Disk'] / 1024 / 1024
     df['Network'] = df['Network'] / 1024 / 1024
 
@@ -167,7 +166,12 @@ def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str
 
     ticks = []
     labels = []
-    mmax = df['Time'].max() - (df['Time'].max() % 60) + 60
+
+    if seconds is None or seconds <= 0:
+        mmax = df['Time'].max() - (df['Time'].max() % 60) + 60
+    else:
+        mmax = seconds
+
     for i in range(0, mmax, 60):
         ticks.append(i)
         labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
@@ -177,37 +181,40 @@ def plot_disk_network(df_disk: pd.DataFrame, df_network: pd.DataFrame, plot: str
     ax.set_ylim([-0.01, 175])
 
     ax.set_xlabel('Time')
-    ax.set_ylabel(MAPPINGS[plot]['ylabel'])
-    ax.set_title(MAPPINGS[plot]['title'])
+    ax.set_ylabel(MAPPINGS[plot_name]['ylabel'])
+    ax.set_title(MAPPINGS[plot_name]['title'])
 
-    print(df.head())
+    # print(df.head())
 
     plt.grid(axis='y')
     plt.tight_layout()
-    plt.savefig(PLOT_DIR + '/' + plot + '.png')
+    plt.savefig(plot_dir + '/' + plot_name + '.png')
+    plt.close()
 
 
-def plot_worker2cpu(df: pd.DataFrame, plot: str):
+def plot_worker2cpu(df: pd.DataFrame,
+                    plot: str,
+                    seconds: int,
+                    cutoff_seconds: int,
+                    plot_dir: str):
     df["Time"].apply(pd.to_timedelta, unit='s')
     df["Time"] = df["Time"] - df["Time"].iloc[0]
     df.rename(
-        columns={
-            '{mode="idle"}': 'Idle',
-            '{mode="iowait"}': 'IOWait',
-            '{mode="irq"}': 'IRQ',
-            '{mode="nice"}': 'Nice',
-            '{mode="softirq"}': 'SoftIRQ',
-            '{mode="steal"}': 'Steal',
-            '{mode="system"}': 'System',
-            '{mode="user"}': 'User',
-        },
+        columns=WORKER2_REPLACEMENTS,
         inplace=True
     )
+
+    for column in df.columns[1:]:
+        df[column] = df[column].rolling(WINDOW, min_periods=1).mean()
 
     # compress the dataframe, taking the average of each 60s interval
     # df = df.groupby(np.arange(len(df))//60).mean()
     # set the time column to 0, 1, 2, ...
     df['Time'] = df.index
+
+    # Trim the table at the cutoff if passed
+    if cutoff_seconds is not None and cutoff_seconds > 0:
+        df = df[df['Time'] <= cutoff_seconds]
 
     # reorder the columns
     df = df[['Time', 'User', 'System', 'IOWait', 'Idle', 'Nice', 'SoftIRQ', 'Steal', 'IRQ']]
@@ -226,7 +233,11 @@ def plot_worker2cpu(df: pd.DataFrame, plot: str):
 
     ticks = []
     labels = []
-    mmax = df['Time'].max() - (df['Time'].max() % 60) + 60
+    if seconds is None or seconds <= 0:
+        mmax = df['Time'].max() - (df['Time'].max() % 60) + 60
+    else:
+        mmax = seconds
+
     for i in range(0, mmax, 60):
         ticks.append(i)
         labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
@@ -240,19 +251,90 @@ def plot_worker2cpu(df: pd.DataFrame, plot: str):
     ax.set_ylabel(MAPPINGS[plot]['ylabel'])
     ax.set_title(MAPPINGS[plot]['title'])
 
-    print(df.head())
+    # print(df.head())
 
     # Save the figure
     plt.tight_layout()
-    plt.savefig(PLOT_DIR + '/' + plot + '.png')
+    plt.savefig(plot_dir + '/' + plot + '.png')
 
 
 def main():
     # Read in the data
-    plots = os.listdir(DATA_DIR)
-    os.makedirs(PLOT_DIR, exist_ok=True)
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-t', '--time',
+                        help='Experiment time in minutes',
+                        dest='time',
+                        required=True,
+                        type=int)
+    parser.add_argument('-c', '--cutoff',
+                        help='Cutoff time after which data is ignored in seconds, 0 is no cutoff',
+                        dest='cutoff',
+                        required=False,
+                        type=int)
+    parser.add_argument('-d', '--dir',
+                        help='Directory with the csv files',
+                        dest='dir')
+    parser.add_argument("-a", "--all", action="store_true",
+                        help=f"Plot everything in {DEFAULT_DIR}/",
+                        dest="all")
+    args = parser.parse_args()
+
+    if (args.dir and os.path.isdir(args.dir)) and not args.all:
+        if os.path.isdir(f'{args.dir}/data'):
+            directory = args.dir
+        else:
+            print('Provide a directory which contains a "data" subdirectory.')
+            exit()
+    else:
+        subs = os.listdir(DEFAULT_DIR)
+        avail = []
+        for x in subs:
+            if x == '.DS_Store':
+                continue
+            subs2 = os.listdir(f'{DEFAULT_DIR}/{x}')
+            for y in subs2:
+                if os.path.isdir(f'{DEFAULT_DIR}/{x}/{y}') and y != '.DS_Store':
+                    avail.append(f'{DEFAULT_DIR}/{x}/{y}')
+
+        avail = sorted(avail)
+
+        if not args.all:
+            for i in range(1, len(avail) + 1):
+                print(f"{i}: {avail[i - 1]}")
+            directory = input(f"Which directory do you want to plot? ")
+            if not directory.isdigit():
+                print("Invalid directory, exiting...")
+                exit()
+            directory = avail[int(directory) - 1]
+        else:
+            for d in avail:
+                print(f"Plotting {d}...")
+                init(d, args.cutoff, args.time)
+            exit(1)
+
+    print(f"Plotting {directory}...")
+    init(directory, args.cutoff, args.time)
+
+
+def init(directory: str,
+         cutoff: int,
+         time: int):
+    data_dir = f'{directory}/data'
+    plot_dir = f'{directory}/plots'
+    # metadata = json.load(open(f'{directory}/metadata.json'))
+
+    plots = os.listdir(data_dir)
+    os.makedirs(plot_dir, exist_ok=True)
 
     plots.append('disk_w+network_r')
+
+    if not cutoff:
+        co = calculate_cutoff(data_dir)
+    else:
+        co = cutoff
+
+    time += 1
+    time *= 60
 
     for plot in plots:
         sns.set(rc={'figure.figsize': (6, 4), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=.9)
@@ -262,14 +344,54 @@ def main():
         sns.set_palette('colorblind')
 
         if plot == "worker2cpu":
-            df = pd.read_csv(DATA_DIR + '/' + plot, sep=';')
+            df = pd.read_csv(data_dir + '/' + plot, sep=';')
 
-            plot_worker2cpu(df, plot)
+            plot_worker2cpu(df,
+                            plot,
+                            seconds=time,
+                            cutoff_seconds=co,
+                            plot_dir=plot_dir)
         elif plot == "disk_w+network_r":
-            df_disk = pd.read_csv(DATA_DIR + '/' + 'disk_w', sep=';')
-            df_network = pd.read_csv(DATA_DIR + '/' + 'network_r', sep=';')
+            df_disk = pd.read_csv(data_dir + '/' + 'disk_w', sep=';')
+            df_network = pd.read_csv(data_dir + '/' + 'network_r', sep=';')
 
-            plot_disk_network(df_disk=df_disk, df_network=df_network, plot=plot)
+            plot_disk_network(df_disk=df_disk,
+                              df_network=df_network,
+                              plot_name=plot,
+                              seconds=time,
+                              cutoff_seconds=co,
+                              plot_dir=plot_dir)
+
+
+def calculate_cutoff(data_dir):
+    # Open the worker2cpu data
+    if 'worker2cpu' not in os.listdir(data_dir):
+        raise Exception(f"No worker2cpu data found in {data_dir}.")
+    df = pd.read_csv(data_dir + '/' + 'worker2cpu', sep=';')
+    # Detect the first time the sum of all the fields is lower than 0.2
+    df["Time"].apply(pd.to_timedelta, unit='s')
+    df["Time"] = df["Time"] - df["Time"].iloc[0]
+    df.rename(
+        columns=WORKER2_REPLACEMENTS,
+        inplace=True
+    )
+
+    min_detected = 1000
+
+    for i, row in df.iterrows():
+        # Skip the first 50% of the data for precaution.
+        if i <= len(df) * 0.5:
+            continue
+
+        t = row.sum() - row['Time'] - row['Idle']
+        if t <= min_detected:
+            min_detected = t
+        if t <= 0.15:
+            print(f"Suggested cutoff: {row['Time']} @ {t}")
+            return min(row['Time'] + 40, len(df))
+
+    print(f"Couldn't detect any cutoff. Minimum: {min_detected}")
+    return 0
 
 
 if __name__ == "__main__":

@@ -177,6 +177,8 @@ vagrant ssh worker1 -c "sudo kubeadm upgrade node phase kubelet-config; sudo sys
 vagrant ssh worker2 -c "sudo kubeadm upgrade node phase kubelet-config; sudo systemctl restart kubelet"
 ```
 
+This will trigger a reload of the cluster with the new configuration. Once the reload is complete, you can proceed with the experiments.
+
 ## References
 
 1. ‘A possible reason for your Virtualbox VM entering the “gurumeditation” state’, meroupatate, May 02, 2020. https://meroupatate.github.io/posts/gurumeditation/ (accessed May 05, 2023).
