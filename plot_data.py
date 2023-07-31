@@ -315,6 +315,7 @@ def main():
     print(f"Plotting {directory}...")
     init(directory, args.cutoff, args.time)
 
+
 def init(directory: str,
          cutoff: int,
          time: int):
@@ -329,7 +330,6 @@ def init(directory: str,
 
     if not cutoff:
         co = calculate_cutoff(data_dir)
-        print(f"Suggested cutoff: {co}")
     else:
         co = cutoff
 
@@ -387,7 +387,8 @@ def calculate_cutoff(data_dir):
         if t <= min_detected:
             min_detected = t
         if t <= 0.15:
-            return row['Time']
+            print(f"Suggested cutoff: {row['Time']} @ {t}")
+            return min(row['Time'] + 40, len(df))
 
     print(f"Couldn't detect any cutoff. Minimum: {min_detected}")
     return 0
