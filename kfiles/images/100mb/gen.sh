@@ -9,7 +9,7 @@ if [[ -f ./Dockerfile ]]; then
     fi
 fi
 
-for i in {1..80}; do
+for i in {1..200}; do
     echo "FROM ubuntu:latest" >> Dockerfile
     for y in $(seq 1 5); do
         printf 'RUN od --format=c --address-radix=n /dev/urandom | tr -d " " | tr -d "\\n" | head -c 39M >> random.random.%s\n' "$y" >> Dockerfile 
