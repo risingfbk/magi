@@ -90,11 +90,11 @@ To do so, we need to generate a certificate for the registry. We will use the ex
 registry domain name to the VM IP. Unfortunately, in our setup our host machine was airgapped, and we were unable to use
 Let's Encrypt to generate a certificate. Therefore, we will use a self-signed certificate.
 
-Finally, remember to set the `REGISTRY_IP_DOMAIN` variable to the domain name you want to use for the registry. In our case, we used
-`registry-192-168-221.100.nip.io`, which resolves to the IP of the registry VM. You may use whatever you want, but remember to change it everywhere.
+Finally, remember to set the `REGISTRY_IP_DOMAIN` variable to the domain name you want to use for the registry. For your convenience, you may change it once in the
+`.envrc` file contained in the base repository folder.
 
 ```shell
-REGISTRY_IP_DOMAIN=${REGISTRY_IP_DOMAIN:-registry-192-168-221.100.nip.io}
+REGISTRY_IP_DOMAIN=${REGISTRY_IP_DOMAIN:-registry-1-2-3.4.nip.io}
 openssl req \
   -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key \
   -addext "subjectAltName = DNS:${REGISTRY_IP_DOMAIN}" \
