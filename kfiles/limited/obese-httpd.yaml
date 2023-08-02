@@ -31,7 +31,7 @@ spec:
     spec:
       containers:
         - name: obese-httpd-container
-          image: registry-10-231-0-208.nip.io/mfranzil/obese-httpd:50
+          image: registry-1-2-3-4.nip.io/mfranzil/obese-httpd:50
           ports:
             - containerPort: 80
           resources:

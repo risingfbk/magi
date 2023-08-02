@@ -44,6 +44,8 @@ MAPPINGS = {
 }
 
 WINDOW = 10
+CUTOFF_BUFFER = 40
+
 DEFAULT_DIR = "temp_data"
 WORKER2_REPLACEMENTS = {
     '{mode="idle"}': 'Idle',
@@ -225,7 +227,15 @@ def plot_worker2cpu(df: pd.DataFrame,
         for col in df.columns[1:]:
             df.at[i, col] = df.at[i, col] / s * 100
 
-    # stop sns's white border on the bars
+    # Estimate average CPU usage
+    acc = 0
+    for i, row in df.iterrows():
+        if i >= cutoff_seconds - CUTOFF_BUFFER:
+            break
+        acc += row[1:].sum() - row["Idle"]
+
+    # Take the average by counting the number of lines in the file
+    print(f"Average CPU utilization: {acc/(len(df)-CUTOFF_BUFFER)}")
 
     # use a palette that colors the bars in the same color as the lines
     # plot a barplot. in each row, stack all the values that are at time t, t+60
@@ -289,7 +299,7 @@ def main():
         subs = os.listdir(DEFAULT_DIR)
         avail = []
         for x in subs:
-            if x == '.DS_Store':
+            if x == '.DS_Store' or x == "exports":
                 continue
             subs2 = os.listdir(f'{DEFAULT_DIR}/{x}')
             for y in subs2:
@@ -388,7 +398,7 @@ def calculate_cutoff(data_dir):
             min_detected = t
         if t <= 0.15:
             print(f"Suggested cutoff: {row['Time']} @ {t}")
-            return min(row['Time'] + 40, len(df))
+            return min(row['Time'] + CUTOFF_BUFFER, len(df))
 
     print(f"Couldn't detect any cutoff. Minimum: {min_detected}")
     return 0
