@@ -6,7 +6,7 @@ metadata:
 spec:
   containers:
   - name: default
-    image: registry-10-231-0-208.nip.io/mfranzil/obese-httpd:1
+    image: registry-1-2-3-4.nip.io/mfranzil/obese-httpd:1
   imagePullSecrets:
   - name: regcred
 

@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ -z $REGISTRY_IP_DOMAIN ]]; then
+    echo "The domain with its port of the registry is missing. E.g. registry.example.com:8080. Please add it to the variable \$REGISTRY_IP_DOMAIN."
+    exit
+fi
+
 # Randomize the order of the pods
 for i in $(seq 1 40 | shuf); do
     echo "Applying $i"
@@ -13,7 +18,7 @@ metadata:
 spec:
   containers:
   - name: randommb
-    image: registry-10-231-0-208.nip.io/mfranzil/randommb:$i
+    image: $REGISTRY_IP_DOMAIN/mfranzil/randommb:$i
 EOF
     kubectl apply -f "$name"
     sleep 2
