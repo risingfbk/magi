@@ -1,6 +1,6 @@
 #!/bin/zsh
 
-STYX=/home/ubuntu/.asdf/installs/golang/1.20.4/packages/bin/styx
+STYX=styx
 QUERIES=prometheus_queries
 
 if [[ -z "$3" ]]; then
