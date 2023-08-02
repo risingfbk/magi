@@ -132,11 +132,11 @@ def run_flask(port):
 
 def inspect_logs(loglines):
     # 12:19:34.176552   kubelet        1732336 1732394 85265  REQ    23     /runtime.v1.ImageService/PullImag
-    # "&PullImageRequest{Image:&ImageSpec{Image:registry-10-231-0-208.nip.io/mfranzil/5gb:2,
+    # "&PullImageRequest{Image:&ImageSpec{Image:registry-1-2-3-4.nip.io/mfranzil/5gb:2,
     # Annotations:map[string]string{kubectl.kubernetes.io/last-applied-configuration:
     # {\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{
     # \"annotations\":{},\"name\":\"5gb-2\",\"namespace\":\"limited\"},
-    # \"spec\":{\"containers\":[{\"image\":\"registry-10-231-0-208.nip.io/mfranzil/5gb:2\",\"name\":\"5gb\"}]}}\n,k
+    # \"spec\":{\"containers\":[{\"image\":\"registry-1-2-3-4.nip.io/mfranzil/5gb:2\",\"name\":\"5gb\"}]}}\n,k
     # ubernetes.io/config.seen: 2023-06-05T12:19:31.988703516Z,kubernetes.io/config.source: api,},},Auth:&AuthConf
     # ig{Username:testuser,Password:testpassword,Auth:,ServerAddress:,IdentityToken:,RegistryToken:,},SandboxConf
     # ig:&PodSandboxConfig{Metadata:&PodSandboxMetadata{Name:5gb-2,Uid:e9e9a0af-9233-4c2d-807e-5ea5ecc6bfcb
@@ -147,7 +147,7 @@ def inspect_logs(loglines):
     # s.pod.uid: e9e9a0af-9233-4c2d-807e-5ea5ecc6bfcb,},Annotations:map[string]string{kubectl.kub
     # ernetes.io/last-applied-configuration: {\"apiVersion\":\"v1\",\"kind\":\"Pod\",\"metadata\":{\"
     # annotations\":{},\"name\":\"5gb-2\",\"namespace\":\"limited\"},
-    # \"spec\":{\"containers\":[{\"image\":\"registry-10-231-0-208.nip.io/mfranzil/5gb:2\",\"name\":\"5gb\"}]}}\n
+    # \"spec\":{\"containers\":[{\"image\":\"registry-1-2-3-4.nip.io/mfranzil/5gb:2\",\"name\":\"5gb\"}]}}\n
     # ,kubernetes.io/config.seen: 2023-06-05T12:19:31.988703516Z,kubernetes.io/config.source: api,},Linux:&L
     # inuxPodSandboxConfig{CgroupParent:/kubepods.slice/kubepods-besteffort.slice/kubepods-besteffort-pode9
     # e9a0af_9233_4c2d_807e_5ea5ecc6bfcb.slice,SecurityContext:&LinuxSandboxSecurityContext{NamespaceOption

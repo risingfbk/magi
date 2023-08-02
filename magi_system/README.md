@@ -5,6 +5,7 @@ The __MAGI System__ is a collection of scripts and tools that observe, monitor a
 ## Components
 
 The MAGI system is composed of two main components:
+
 - the __master__, which is responsible for monitoring Kubernetes API calls and for triggering the mitigation process;
 - the __node__, which inspects containerd API calls and activity to detect the offending downloads and to mitigate them.
 
@@ -102,7 +103,7 @@ tail -F /var/log/kubernetes/audit/audit.log | grep "/pods" | \
 This string can be used to download the manifest of a specific image and get the list of the blobs that compose it. These blobs can then be deleted from the local disk, which will make the download fail the moment a new layer is requested.
 
 ```bash
-curl -X GET -u testuser:testpassword https://registry-10-231-0-208.nip.io/v2/mfranzil/5gb/manifests/1 2>/dev/null \
+curl -X GET -u testuser:testpassword https://${REGISTRY_IP_DOMAIN}.nip.io/v2/mfranzil/5gb/manifests/1 2>/dev/null \
     | jq ".fsLayers[].blobSum" | uniq | tr -d '"' | cut -f 2 -d : \
     | xargs -I {} rm -rf /var/lib/containerd/io.containerd.content.v1.content/blobs/sha256/{} \
     && rm -rf /var/lib/containerd/io.containerd.content.v1.content/ingest/*
