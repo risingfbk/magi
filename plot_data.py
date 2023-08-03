@@ -7,6 +7,7 @@ import os
 import datetime
 import argparse
 import json
+from secret_parameters import main_registry
 
 MAPPINGS = {
     'cpu': {
@@ -58,15 +59,25 @@ WORKER2_REPLACEMENTS = {
     '{mode="user"}': 'User',
 }
 
+WORKERXY_REPLACEMENTS = {
+    'Worker2_x': 'Disk',
+    'Worker2_y': 'Network',
+    'Worker1_x': 'Disk',
+    'Worker1_y': 'Network'
+}
+
 DISKNETWORK_REPLACEMENTS = {
     '{instance="192.168.221.10:9100"}': 'Master',
     '{instance="192.168.221.11:9100"}': 'Worker1',
     '{instance="192.168.221.12:9100"}': 'Worker2',
-    '{instance="10.231.0.208:9100"}': 'Registry',
+    '{instance="192.168.200.10:9100"}': 'Master',
+    '{instance="192.168.200.11:9100"}': 'Worker1',
+    '{instance="192.168.200.12:9100"}': 'Registry',
+    '{instance="' + main_registry + ':9100"}': 'Registry',
     '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
     '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
     '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
-    '{instance="10.231.0.208:9100",job="prometheus"}': 'Registry',
+    '{instance="' + main_registry + ':9100",job="prometheus"}': 'Registry',
 }
 
 
@@ -141,12 +152,11 @@ def plot_disk_network(df_disk: pd.DataFrame,
         )
     # Merge the two df by creating a new df (time, disk, network) of only worker2
     df = pd.merge(df_disk, df_network, on='Time')
-    df = df[['Time', 'Worker2_x', 'Worker2_y']]
+
+    if 'Worker2' in df:
+        df = df[['Time', 'Worker2_x', 'Worker2_y']]
     df.rename(
-        columns={
-            'Worker2_x': 'Disk',
-            'Worker2_y': 'Network',
-        },
+        columns=WORKERXY_REPLACEMENTS,
         inplace=True
     )
 

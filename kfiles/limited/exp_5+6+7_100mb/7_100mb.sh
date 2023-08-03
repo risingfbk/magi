@@ -21,6 +21,6 @@ spec:
     image: $REGISTRY_IP_DOMAIN/mfranzil/100mb:$i
 EOF
     kubectl apply -f "$name"
+    (sleep 15; kubectl delete -f "$name" --force --grace-period=0 ) &
     sleep 5
-    kubectl delete -f "$name" --force --grace-period=0
 done
