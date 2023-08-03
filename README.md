@@ -179,6 +179,42 @@ vagrant ssh worker2 -c "sudo kubeadm upgrade node phase kubelet-config; sudo sys
 
 This will trigger a reload of the cluster with the new configuration. Once the reload is complete, you can proceed with the experiments.
 
+## Running the cluster on a physical enviroment
+
+During our tests, we also used three Raspberry Pi 4B boards with 4GB of RAM each. The Raspberry Pis were interconnected with a dedicated switch, airgapped from the rest of the network, and had a remote access capability through a PC used as a bridge. Everything present in this README still applies, but with the following considerations:
+
+- We used `microk8s` instead of `kubeadm` for running the cluster. This simplified the configuration process, but meant that some configurations were handled differently: 
+  - Commands such as `systemctl restart kubelet` do not exist in `microk8s`, and are handled internally. We restarted the cluster using `sudo snap restart microk8s`;
+  - The configuration is handled via `/var/snap/microk8s/current/args/kubelet`, and not by a `kubelet-config` configmap; thus, to enable Parallel Image Pulls, we created a `config.yaml` file in `/var/snap/microk8s/current/args/` as in [the docs](https://kubernetes.io/docs/tasks/administer-cluster/kubelet-config-file/), and then added a `--config=${SNAP_DATA}/args/config.yaml` option to the `kubelet` service commandline;
+  - `crictl` must be installed manually;
+- As the Raspberry Pis use the ARM architecture, images had to be rebuilt and the tools had to be downloaded for the correct architecture;
+- Tests were reduced in scope, as our cluster was inherently weaker than the one provided by Vagrant; this was exacerbated by the fact that Raspberries use SD cards as the main storage medium;
+
+Finally, we tweaked some parameters to increase the memory reserved for UDP sockets and thus improve network reliability:
+
+```shell
+$ sudo sysctl -w net.core.rmem_max=26214400
+net.core.rmem_max = 26214400
+$ sudo sysctl -w net.core.rmem_default=26214400
+net.core.rmem_default = 26214400
+```
+
+For using a PC as a bridge, we enabled IPv4 forward:
+
+```shell
+echo 1 | sudo tee /proc/sys/net/ipv4/ip_forward
+sudo sysctl -w net.ipv4.ip_forward=1  # alternatively, if the previous command does not work
+```
+
+Then we applied the following iptables rules:
+
+```shell
+sudo iptables-t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
+sudo iptables-t nat -A POSTROUTING -o enp0s31f6 -j MASQUERADE
+sudo iptables-A FORWARD -i enp0s31f6 -o wlp2s0 -j ACCEPT
+sudo iptables-A FORWARD -i wlp2s0 -o enp0s31f6 -m state --state RELATED,ESTABLISHED -j ACCEPT
+```
+
 ## References
 
 1. ‘A possible reason for your Virtualbox VM entering the “gurumeditation” state’, meroupatate, May 02, 2020. https://meroupatate.github.io/posts/gurumeditation/ (accessed May 05, 2023).
