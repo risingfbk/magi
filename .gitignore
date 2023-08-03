@@ -1,14 +1,14 @@
 __pycache__
 
 *.mp4
-registry_files
-certs
 join.sh
-cluster/config
 temp_data
 .vagrant
 .idea
 logs
+
+raspberry/cloud-init.yml
+registry/certs
 
 kfiles/images/randommb/Dockerfile
 kfiles/images/randomgb/Dockerfile

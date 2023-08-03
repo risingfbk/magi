@@ -4,7 +4,7 @@
 # /ingest/b253829324bf5dcf58029b126e42713139712a9a671e097dacff2b2d2db85ac0", 0755
 
 # 420045 connect(49, {sa_family=AF_INET, sin_port=htons(443),
-# sin_addr=inet_addr("10.231.0.208")}, 16) = -1 EINPROGRESS (Operation now in progress)
+# sin_addr=inet_addr("1.2.3.4")}, 16) = -1 EINPROGRESS (Operation now in progress)
 
 # 420040 getsockname(61,  <unfinished ...>
 

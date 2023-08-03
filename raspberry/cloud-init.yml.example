@@ -1,0 +1,19 @@
+#cloud-config
+
+ssh_pwauth: true
+
+# Create my user & SSH keys
+users:
+  - name: ubuntu
+    passwd: $6$9lyKcjSDFLGaJpLC$1VJzSXpjN6/dF0XKy3JGTMq7fOAVzPIYDh93BPXtcNOE7Qew9eLvyglXV21kpU/e4lkJ8HtykpcGs.TeKk/Nf1
+    lock_passwd: false
+    groups: [sudo]
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    ssh_authorized_keys:
+      - "YOUR_SSH_AUTH_KEY"
+
+
+runcmd:
+ - printf "ubuntu-host-$(openssl rand -hex 3)" > /etc/hostname
+ - printf "Ubuntu 22.04 LTS \nIP - $(hostname -I)\n" > /etc/issue
+ - 
