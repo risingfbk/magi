@@ -44,7 +44,7 @@ wipe_cache
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=1)"
     ./4_randommb.sh &
-    current_date=$(date +"%FT%T")
+    current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
@@ -59,7 +59,7 @@ reload_nodes
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=2)"
     ./4_randommb.sh &
-    current_date=$(date +"%FT%T")
+    current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
@@ -74,7 +74,7 @@ reload_nodes
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=4)"
     ./4_randommb.sh &
-    current_date=$(date +"%FT%T")
+    current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
