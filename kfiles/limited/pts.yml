@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pts 
+  namespace: limited
+spec:
+  containers:
+  - name: default
+    image: registry-1-2-3-4.nip.io/mfranzil/pts:main
+    args: ["/phoronix-test-suite/phoronix-test-suite", "shell"]
+    #args: ["/phoronix-test-suite/phoronix-test-suite", "benchmark", "build-linux-kernel"]
+    imagePullPolicy: Always
+  nodeSelector:
+    kubernetes.io/hostname: worker2
+  imagePullSecrets:
+  - name: regcred2
