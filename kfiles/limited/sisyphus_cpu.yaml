@@ -1,0 +1,25 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sisyphus-deployment
+  namespace: limited 
+  labels:
+    app: sisyphus_app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sisyphus_app
+  template:
+    metadata:
+      labels:
+        app: sisyphus_app
+    spec:
+      containers:
+        - name: sisyphus-container
+          image: registry-192-168-200-12.nip.io/mfranzil/sisyphus:4
+          args: ["cpu"]
+          resources:
+              limits:
+                  cpu: 500m
+                  memory: 0.5G
