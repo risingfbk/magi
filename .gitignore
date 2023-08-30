@@ -9,6 +9,7 @@ logs
 
 raspberry/cloud-init.yml
 registry/certs
+cluster/certs
 
 kfiles/images/randommb/Dockerfile
 kfiles/images/randomgb/Dockerfile
