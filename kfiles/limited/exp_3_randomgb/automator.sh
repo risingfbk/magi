@@ -37,19 +37,19 @@ function switch_parallel() {
     sleep 10
 }
 
-EXP_DURATION=10
+EXP_DURATION=28
 
 wipe_cache
 
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=1)"
-    ./4_randommb.sh &
+    ./3_random_upto7.sh &
     current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
-    mkdir -p temp_data/4_randommb_40i_r/maxpull1/$current_date/data
-    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/4_randommb_40i_r/maxpull1/$current_date/data
+    mkdir -p temp_data/3_randomgb_7i_r/maxpull1/$current_date/data
+    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/3_randomgb_7i_r/maxpull1/$current_date/data
     cd -
 done
 
@@ -58,13 +58,13 @@ reload_nodes
 
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=2)"
-    ./4_randommb.sh &
+    ./3_random_upto7.sh &
     current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
-    mkdir -p temp_data/4_randommb_40i_r/maxpull2/$current_date/data
-    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/4_randommb_40i_r/maxpull2/$current_date/data
+    mkdir -p temp_data/3_randomgb_7i_r/maxpull2/$current_date/data
+    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/3_randomgb_7i_r/maxpull2/$current_date/data
     cd -
 done
 
@@ -73,13 +73,13 @@ reload_nodes
 
 for i in $(seq 1 30); do
     echo "Experiment 4, iteration $i (mp=4)"
-    ./4_randommb.sh &
+    ./3_random_upto7.sh &
     current_date=$(date +"%FT%T" -u)
     sleep $((60 * EXP_DURATION))
     wipe_cache
     cd $DATABASE
-    mkdir -p temp_data/4_randommb_40i_r/maxpull4/$current_date/data
-    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/4_randommb_40i_r/maxpull4/$current_date/data
+    mkdir -p temp_data/3_randomgb_7i_r/maxpull4/$current_date/data
+    ./export_data.sh $current_date ${EXP_DURATION}m temp_data/3_randomgb_7i_r/maxpull4/$current_date/data
     cd -
 done
 
