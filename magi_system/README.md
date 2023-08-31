@@ -13,41 +13,42 @@ The master component must be deployed on the Kubernetes master node, while the n
 
 ## Installation
 
-The MAGI System can be installed on any Kubernetest cluster with version v1.26 or higher. The following steps are required to install the system (as a root user):
+The MAGI System can be installed on any Kubernetest cluster with version v1.26 or higher. The pre-requisites are already pre-installed
+within the Vagrantfile in the cluster. If installing manually, please run this script as `root`.
 
 ```bash
-apt-get -yqq update && \
-    DEBIAN_FRONTEND=noninteractive apt-get install -yqq \
-    zip bison build-essential cmake flex git libedit-dev curl \
-    libllvm12 llvm-12-dev libclang-12-dev python python3-pip \
-    zlib1g-dev libelf-dev libfl-dev python3-setuptools \
-    liblzma-dev arping netperf iperf gcc kmod memcached \
-    libbpf-dev linux-headers-$(uname -r) linux-libc-dev \
-    socat systemctl && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-cd /tmp && \
-    git clone https://github.com/iovisor/bcc.git && \
-    mkdir bcc/build; cd bcc/build && \
-    cmake .. && make && make install && \
-    cmake -DPYTHON_CMD=python3 .. && \
-    cd src/python/ && make && make install
-cd /tmp && \
-    curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz && \
-    tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz && \
-    rm -f go1.20.4.linux-amd64.tar.gz
 export PATH="$PATH:/usr/local/go/bin"
 export CGO_ENABLED=1
 export GOHOSTARCH=amd64
 export GOARCH=amd64
+
+# Install BCC and Go for containerdsnoop tests
+curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
+tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
+echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh
+
+apt-get install -yqq python3-pip linux-headers-$(uname -r) bison build-essential \
+  cmake flex g++ git libelf-dev zlib1g-dev libfl-dev systemtap-sdt-dev binutils-dev llvm-8-dev llvm-8-runtime \
+  libclang-8-dev clang-8 arping netperf iperf3 python3-distutils
+
+pip install setuptools
+  
+wget https://github.com/iovisor/bcc/releases/download/v0.24.0/bcc-src-with-submodule.tar.gz
+tar xvf bcc-src-with-submodule.tar.gz && rm bcc-src-with-submodule.tar.gz
+mkdir bcc/build; cd bcc/build
+cmake -DPYTHON_CMD=python3 ..
+make -j8 && make install && ldconfig
+
 cd /tmp && \
     git clone https://github.com/mfranzil/containerdsnoop && \
     cd containerdsnoop && \
-    go build -o /usr/local/bin/containerdsnoop && \
-    cd /
+    go build -o containerdsnoop && \  
+    sudo mv containerdsnoop /usr/local/bin/containerdsnoop
+
 depmod
 ```
 
-These steps will install [BCC](https://github.com/iovisor/bcc) and dependencies, Go version 1.20, and the [containerdsnoop](https://github.com/mfranzil/containerdsnoop) tool on the system.
+These steps will install [BCC](https://github.com/iovisor/bcc) version 0.24, Go version 1.20, and the [containerdsnoop](https://github.com/mfranzil/containerdsnoop) tool on the system.
 
 Next, make sure each node is able to talk with each other using domain names. This can be done by adding the following lines to the `/etc/hosts` file of each node:
 

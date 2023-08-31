@@ -64,6 +64,8 @@ For your convenience, a copy of the `node_exporter` binary is provided in the `.
 Each machine has an NFS share mounted in `/vagrant` that can be used to share files between the host and the VMs. Indeed, it is used to share a `join.sh` script that can be used to join the worker nodes to the cluster. Once finished, you may want to remove it.
 Once finished, Vagrant will spit out a `config` file that can be used to interact with the cluster using `kubectl`. Please move it to `$HOME/.kube/config` and use it to interact with the cluster.
 
+Finally, remember to create a namespace for the experiments: `kubectl create namespace limited`.
+
 ### Registry
 
 Handling the registry is trickier as it requires some manual steps. Indeed, k8s and Docker strongly dislike self-signed certificates.
@@ -148,6 +150,7 @@ Finally, we can create the k8s secret from the CA cert and apply it to our names
 
 ```shell
 kubectl create secret generic regcred \
+    -n limited \
     --from-file=.dockerconfigjson=$HOME/.docker/config.json \
     --type=kubernetes.io/dockerconfigjson
 kubectl patch sa default -n limited -p '"imagePullSecrets": [{"name": "regcred" }]'
@@ -179,6 +182,45 @@ vagrant ssh worker2 -c "sudo kubeadm upgrade node phase kubelet-config; sudo sys
 
 This will trigger a reload of the cluster with the new configuration. Once the reload is complete, you can proceed with the experiments.
 
+## Enabling Auditing
+
+For enabling Kubernetes' auditing capabilities, visit [this page](https://kubernetes.io/docs/tasks/debug/debug-cluster/audit/). SSH into the master, and
+edit the `/etc/kubernetes/manifests/kube-apiserver.yaml`; first, add the bootup flags:
+
+```
+  - --audit-policy-file=/etc/kubernetes/audit-policy.yaml
+  - --audit-log-path=/var/log/kubernetes/audit/audit.log
+```
+
+then mount the volumes:
+
+```yaml
+volumeMounts:
+  - mountPath: /etc/kubernetes/audit-policy.yaml
+    name: audit
+    readOnly: true
+  - mountPath: /var/log/kubernetes/audit/
+    name: audit-log
+    readOnly: false
+```
+
+and finally configure the hostPath:
+
+```yaml
+volumes:
+- name: audit
+  hostPath:
+    path: /etc/kubernetes/audit-policy.yaml
+    type: File
+
+- name: audit-log
+  hostPath:
+    path: /var/log/kubernetes/audit/
+    type: DirectoryOrCreate
+```
+
+Then, copy the `metrics.yaml` file from the `kfiles/audit` folder in this repository to `/etc/kubernetes/` and wait for the Pod to reboot.
+
 ## Running the cluster on a physical enviroment
 
 During our tests, we also used three Raspberry Pi 4B boards with 4GB of RAM each. The Raspberry Pis were interconnected with a dedicated switch, airgapped from the rest of the network, and had a remote access capability through a PC used as a bridge. Everything present in this README still applies, but with the following considerations:
@@ -209,10 +251,10 @@ sudo sysctl -w net.ipv4.ip_forward=1  # alternatively, if the previous command d
 Then we applied the following iptables rules:
 
 ```shell
-sudo iptables-t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
-sudo iptables-t nat -A POSTROUTING -o enp0s31f6 -j MASQUERADE
-sudo iptables-A FORWARD -i enp0s31f6 -o wlp2s0 -j ACCEPT
-sudo iptables-A FORWARD -i wlp2s0 -o enp0s31f6 -m state --state RELATED,ESTABLISHED -j ACCEPT
+sudo iptables -t nat -A POSTROUTING -o wlp2s0 -j MASQUERADE
+sudo iptables -t nat -A POSTROUTING -o enp0s31f6 -j MASQUERADE
+sudo iptables -A FORWARD -i enp0s31f6 -o wlp2s0 -j ACCEPT
+sudo iptables -A FORWARD -i wlp2s0 -o enp0s31f6 -m state --state RELATED,ESTABLISHED -j ACCEPT
 ```
 
 ## References
