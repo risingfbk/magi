@@ -10,6 +10,8 @@ import requests
 
 from common import follow
 
+nodes = ("master", "worker1", "worker2")
+
 
 def main(args: argparse.Namespace):
     log.basicConfig(level=log.INFO, format="%(asctime)s [%(levelname)s] - %(message)s")
@@ -74,9 +76,10 @@ def main(args: argparse.Namespace):
             handled[key]["image"] = js["responseObject"]["spec"]["containers"][0]["image"]
             handled[key]["targetNode"] = None
             log.info(f"New pod detected! {key} with image {handled[key]['image']}")
-        else: # Non-initialization
+        else:  # Non-initialization
             if key not in handled:
-                log.info(f"Ignoring: {key} was not scheduled! (previous status: None), status: verb={verb}, stage={stage}, uri={uri}") #, json={js}")
+                log.info(f"Ignoring: {key} was not scheduled! (previous status: None), "
+                         "status: verb={verb}, stage={stage}, uri={uri}")  # , json={js}")
                 continue
             if verb == "create" and stage == "ResponseComplete":
                 if handled[key]["status"] != 0b001:
@@ -91,7 +94,15 @@ def main(args: argparse.Namespace):
                 if handled[key]["status"] != 0b011:
                     log.warning(f"Alert: {key} out of order (previous status: {handled[key]['status']})")
                 if handled[key]['targetNode'] is None:
-                    log.error(f"Could not find target node for pod {key}, cannot send alert")
+                    log.error(f"Could not find target node for pod {key}, attempting broadcast alert")
+                    # Try sending a broadcast alert instead
+                    for k in nodes:
+                        try:
+                            requests.post(f"http://{k}:{args.target_port}/alert", json={
+                                "image": handled[key]["image"]
+                            })
+                        except requests.exceptions.ConnectionError:
+                            pass
                     continue
                 # *siren noises*
                 log.info(f"Sending alert to {handled[key]['targetNode']} with image {handled[key]['image']}")

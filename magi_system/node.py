@@ -17,6 +17,7 @@ ports = {}
 
 watch_mode = False
 
+
 @app.route('/alert', methods=['POST'])
 def alert():
     if not request.json:
@@ -103,7 +104,7 @@ def terminate_download(image):
     log.info(f"Terminating download of image {image} from node {node_source} using registry {registry_ip}")
 
     # Obtain ports to terminate. Try it 4 times, waiting 3 seconds between each try
-    #for _ in range(4):
+    # for _ in range(4):
     for layer in layer_hashes:
         if layer not in ports:
             log.warning(f"Layer {layer} not found in ports (ports: {ports})")
