@@ -12,6 +12,7 @@ from common import follow
 app = Flask(__name__)
 
 queue = []
+blacklist = []
 ports = {}
 
 watch_mode = False
@@ -29,8 +30,8 @@ def alert():
         terminate_download(image)
         return {"result": f"Requesting removal of image {image} from queue"}, 202
     else:
-        log.info(f"Image {image} not in queue, ignoring")
-        return {"result": f"Image {image} not in queue, ignoring"}, 404
+        log.info(f"Image {image} not in queue, adding to blacklist")
+        return {"result": f"Image {image} not in queue, blacklisting"}, 404
 
 
 def show_queue():
@@ -214,6 +215,12 @@ def inspect_logs(loglines):
                 log.info(f"Added {image} to queue")
             else:
                 log.info(f"{image} is already in queue, skipping")
+
+            if image in blacklist:
+                blacklist.remove(image)
+                terminate_download(image)
+                log.info("Terminated download since image was in blacklist")
+
         else:
             log.error("Malformed log line, skipping")
 
