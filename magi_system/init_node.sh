@@ -8,13 +8,15 @@ if [[ "$UID" -ne 0 ]]; then
     exit 1
 fi
 
-source $HOME/.bashrc
+pgrep iruel.sh | xargs kill -9
+# shellcheck disable=SC1091
+source "$HOME/.bashrc"
 
 # Assure that Go 1.20 is installed on the system
 install_go=0
 if which go &>/dev/null; then
     # Check version
-    if [[ $(go version) =~ "go1.20" ]]; then
+    if [[ $(go version) =~ go1.20 ]]; then
         echo "Go 1.20 is installed"
     else
         echo "Go 1.20 is not installed..."
@@ -64,7 +66,7 @@ pid=$!
 
 echo "Checking python3 requirements..."
 reqs=$(pip freeze -r requirements.txt 2>&1 | grep "Warning")
-if [[ ! -z "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
+if [[ -n "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
     echo "Some python3 requirements are missing:"
     echo "$reqs"
 
@@ -109,4 +111,4 @@ echo "Starting monitoring..."
 python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
 
 echo "Cleaning up..."
-kill -TERM $pid
+kill -TERM "$pid"
