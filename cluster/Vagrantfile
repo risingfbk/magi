@@ -170,7 +170,7 @@ apt-get install -yqq python3-pip linux-headers-$(uname -r) bison build-essential
   cmake flex g++ git libelf-dev zlib1g-dev libfl-dev systemtap-sdt-dev binutils-dev llvm-8-dev llvm-8-runtime \
   libclang-8-dev clang-8 arping netperf iperf3 python3-distutils jq
 
-pip install setuptools
+pip install setuptools flask
 
 cd /tmp
 wget https://github.com/iovisor/bcc/releases/download/v0.24.0/bcc-src-with-submodule.tar.gz

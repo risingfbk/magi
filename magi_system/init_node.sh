@@ -8,9 +8,17 @@ if [[ "$UID" -ne 0 ]]; then
     exit 1
 fi
 
-pgrep iruel.sh | xargs kill -9
 # shellcheck disable=SC1091
 source "$HOME/.bashrc"
+
+if [[ $(pgrep containerdsnoop) ]]; then
+    pkill -9 containerdsnoop
+fi
+if [[ $(pgrep iruel.sh) ]]; then
+    pkill -9 iruel.sh
+fi
+
+rm -rf "${LOG_FILE}" "${IRUEL_LOG}"
 
 # Assure that Go 1.20 is installed on the system
 install_go=0
@@ -111,4 +119,7 @@ echo "Starting monitoring..."
 python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
 
 echo "Cleaning up..."
-kill -TERM "$pid"
+
+for pid in $pid; do
+    kill -9 "$pid"
+done
