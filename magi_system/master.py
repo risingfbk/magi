@@ -60,6 +60,10 @@ def main(args: argparse.Namespace):
 
         key = "-".join([name, js["objectRef"]["namespace"], js["objectRef"]["resource"]])
 
+        if "requestObject" in js:
+            is_binding = js["requestObject"]["kind"] == "Binding"
+        else:
+            is_binding = False
         # Steps:
         # create/RequestReceived to *kubectl-client-side-apply* (do nothing)
         # create/ResponseComplete to *kubectl-client-side-apply*
@@ -68,7 +72,7 @@ def main(args: argparse.Namespace):
         # delete/RequestReceived
         # delete/ResponseComplete
 
-        if verb == "create" and stage == "ResponseComplete" and "kubectl-client-side-apply" in uri:
+        if verb == "create" and stage == "ResponseComplete" and not is_binding:  # Initialization
             if key in handled:
                 log.warning(f"Alert: {key} was already scheduled! (previous status: {handled[key]['status']})")
             handled[key] = {}
