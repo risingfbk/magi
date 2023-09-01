@@ -37,10 +37,14 @@ def alert():
 
 def show_queue():
     old_queuestr = str(queue)
+    old_blackliststr = str(blacklist)
     while True:
         if str(queue) != old_queuestr:
             log.info(f"Queue: {queue}")
             old_queuestr = str(queue)
+        if str(blacklist) != old_blackliststr:
+            log.info(f"Blacklist: {blacklist}")
+            old_blackliststr = str(blacklist)
         sleep(5)
 
 
@@ -191,9 +195,16 @@ def inspect_logs(loglines):
                     queue.remove(image)
                     log.info(f"Removed {image} from queue")
                 else:
-                    log.warning(f"Cound not find {image} in queue...")
+                    log.warning(f"Could not find {image} in queue...")
+            elif "docker.io/" in image:
+                image = image.split("docker.io/")[1]
+                if image in queue:
+                    queue.remove(image)
+                    log.info(f"Removed {image} from queue")
+                else:
+                    log.warning("Could not find {image} in queue...")
             else:
-                log.warning(f"Cound not find {image} in queue...")
+                log.warning(f"Could not find {image} in queue...")
 
         elif "REQ" in line:
             # Attempt to extract the json from the log line
