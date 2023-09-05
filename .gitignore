@@ -12,6 +12,7 @@ raspberry/cloud-init.yml
 registry/certs
 cluster/certs
 
+kfiles/limited/tinker
 kfiles/images/randommb/Dockerfile
 kfiles/images/randomgb/Dockerfile
 kfiles/limited/exp*/*-generated.yml
