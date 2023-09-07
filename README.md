@@ -221,6 +221,36 @@ volumes:
 
 Then, copy the `metrics.yaml` file from the `kfiles/audit` folder in this repository to `/etc/kubernetes/` and wait for the Pod to reboot.
 
+## Enabling Kube-Scheduler - Plugins Config File
+
+For enabling kube-scheduler plugin configuration, visit [this page](https://kubernetes.io/docs/reference/scheduling/config/). SSH into the master, and
+edit the `/etc/kubernetes/manifests/kube-scheduler.yaml`; first, add the bootup flags:
+
+```
+  - --config=/etc/kubernetes/kube-scheduler.yaml
+```
+
+then add the following volume to the mounts:
+
+```yaml
+volumeMounts:
+  - mountPath: /etc/kubernetes/kube-scheduler.yaml
+    name: schedconfig
+    readOnly: true
+```
+
+and finally configure the hostPath:
+
+```yaml
+volumes:
+- hostPath:
+    path: /etc/kubernetes/scheduler-config.yaml
+    type: FileOrCreate
+  name: schedconfig
+```
+
+Then, copy the `scheduler-config.yaml` file from the `kfiles/scheduler` folder in this repository to `/etc/kubernetes/` and wait for the Pod to reboot.
+
 ## Running the cluster on a physical enviroment
 
 During our tests, we also used three Raspberry Pi 4B boards with 4GB of RAM each. The Raspberry Pis were interconnected with a dedicated switch, airgapped from the rest of the network, and had a remote access capability through a PC used as a bridge. Everything present in this README still applies, but with the following considerations:
