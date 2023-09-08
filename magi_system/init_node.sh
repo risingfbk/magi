@@ -111,9 +111,10 @@ else
     fi
 fi
 
-echo "Invoking Iruel..."
+echo "Invoking Iruel, this may take a while..."
 ./iruel.sh &
 pid="$pid $!"
+sleep 60
 
 echo "Starting monitoring..."
 python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
