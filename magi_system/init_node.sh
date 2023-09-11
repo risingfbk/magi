@@ -1,6 +1,7 @@
 #!/bin/bash
 
-LOG_FILE=/tmp/containerdsnoop.log
+CTDSNOOP_LOG=/tmp/containerdsnoop.log
+IRUEL_TMP=/tmp/iruel.tmp
 IRUEL_LOG=/tmp/iruel.log
 
 if [[ "$UID" -ne 0 ]]; then
@@ -18,7 +19,7 @@ if [[ $(pgrep iruel.sh) ]]; then
     pkill -9 iruel.sh
 fi
 
-rm -rf "${LOG_FILE}" "${IRUEL_LOG}"
+rm -rf "${CTDSNOOP_LOG}" "${IRUEL_LOG}"
 
 # Assure that Go 1.20 is installed on the system
 install_go=0
@@ -56,8 +57,8 @@ if [[ "$install_go" -eq 1 || "$install_containerdsnoop" -eq 1 ]]; then
 fi
 
 # echo "Setting up socat..."
-# rm -rf ${LOG_FILE}
-# socat PIPE:${LOG_FILE} TCP4-LISTEN:22333,reuseaddr,fork &
+# rm -rf ${CTDSNOOP_LOG}
+# socat PIPE:${CTDSNOOP_LOG} TCP4-LISTEN:22333,reuseaddr,fork &
 
 echo "Rebooting kubelet, this may take a while..."
 systemctl stop kubelet
@@ -69,7 +70,7 @@ if pgrep "containerdsnoop" &>/dev/null; then
 fi
 
 echo "Starting containerdsnoop..."
-containerdsnoop -complete_content >${LOG_FILE} 2>&1 &
+containerdsnoop -complete_content >${CTDSNOOP_LOG} 2>&1 &
 pid=$!
 
 echo "Checking python3 requirements..."
@@ -102,7 +103,7 @@ echo "Checking if bbolt is installed..."
 if which bbolt &>/dev/null; then
     echo "bbolt is installed"
 else
-    if [[ -f "/home/vagrant/go/bin/bbolt" ]]; then
+    if [[ -f "$HOME/go/bin/bbolt" ]]; then
         echo "bbolt is installed but not in the path, adding..."
         export PATH=$PATH:/home/vagrant/go/bin
     else
@@ -112,14 +113,38 @@ else
 fi
 
 echo "Invoking Iruel, this may take a while..."
-./iruel.sh &
+
+docker rm -f tetragon-container
+[[ -f "$IRUEL_TMP" ]] && rm $IRUEL_TMP
+[[ -f "$IRUEL_LOG" ]] && rm $IRUEL_LOG
+
+docker run -d --name tetragon-container \
+    --rm --pull always --pid=host --cgroupns=host \
+    --privileged -v "$PWD/tracing_policy.yaml:/tracing_policy.yaml" \
+    -v /sys/kernel/btf/vmlinux:/var/lib/tetragon/btf \
+    quay.io/cilium/tetragon-ci:latest \
+    --tracing-policy /tracing_policy.yaml
+
+echo "Waiting for tetragon-container to be ready..."
+sleep 50
+
+echo "Recording events..."
+sleep 10
+
+docker exec tetragon-container tetra getevents -o json > $IRUEL_TMP &
+
+python3 iruel.py
 pid="$pid $!"
-sleep 60
 
 echo "Starting monitoring..."
-python3 node.py --snoopfile ${LOG_FILE} --iruelfile ${IRUEL_LOG} --listen-port 22333
+python3 node.py --snoopfile ${CTDSNOOP_LOG} --iruelfile ${IRUEL_LOG} --listen-port 22333
 
 echo "Cleaning up..."
+
+pgrep containerdsnoop | xargs kill -9
+pgrep shamshel | xargs kill -9
+pgrep python3 | xargs kill -9
+docker stop tetragon-container && docker rm -f tetragon-container
 
 for pid in $pid; do
     kill -9 "$pid"

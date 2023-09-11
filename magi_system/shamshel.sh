@@ -2,7 +2,7 @@
 
 SHAFOLDER="/var/lib/containerd/io.containerd.content.v1.content/blobs/sha256"
 DBFILE="/var/lib/containerd/io.containerd.metadata.v1.bolt/meta.db"
-BBOLT="/root/bin/bbolt"
+BBOLT="$HOME/go/bin/bbolt"
 
 if [[ "$UID" -ne 0 ]]; then
   echo "Please run as root"
