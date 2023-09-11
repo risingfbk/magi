@@ -82,10 +82,7 @@ This evil one-liner uses netstat to obtain the offending connections' informatio
 This one-liner is not used in the system and has been superseded by other methods, but is useful as a panic button for instantly terminating any download. Just make sure to replace the IP addresses of both the originating node and the registry with the correct ones.
 
 ```bash
-sudo netstat -apeen | grep $(pgrep containerd | xargs ps \
-  | grep "containerd$" | cut -f 1 -d " ")/containerd | grep tcp \
-  | grep ${REGISTRY_IP_DOMAIN} | sed -E " s/ +/ /g" | cut -f 4 -d " " \
-  | cut -f 2 -d : | xargs -I {} sudo ss -K src 192.168.121.58 sport = {}
+sudo netstat -apeen | grep $(pgrep containerd$)/containerd | grep tcp | grep ${REGISTRY_IP_DOMAIN} | sed -E " s/ +/ /g" | cut -f 4 -d " " | cut -f 2 -d : | xargs -I {} sudo ss -K src 192.168.121.58 sport = {}
 ```
 
 ### Original jq string for master
