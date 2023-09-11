@@ -18,6 +18,7 @@ from common import follow
 
 file = "/tmp/iruel.tmp"
 lines = follow(file)
+innerfile = open(file, "r")
 
 # print("tid", "hash")
 for line in lines:
@@ -30,25 +31,31 @@ for line in lines:
         continue
     __tid = obj['process_kprobe']['process']['tid']
     __hash = obj['process_kprobe']['args'][1]['string_arg']
-    __hash = __hash.split("/")[-1]
-    # print("__hash: ", __hash, " from __tid: ", __tid)
-    with open(file, "r") as innerfile:
-        for innerline in innerfile:
-            innerobj = json.loads(innerline)
-            if (
-                "process_kprobe" in innerobj
-                and innerobj["process_kprobe"]["process"]["tid"] == __tid
-                and innerobj["process_kprobe"]["function_name"] == "tcp_connect"
-            ):
-                arg = innerobj["process_kprobe"]["args"][0]["sock_arg"]
-                stuff = [
-                    __tid,
-                    "",
-                    arg["sport"],
-                    arg["saddr"],
-                    arg["dport"],
-                    arg["daddr"],
-                    __hash
-                ]
-                # print(stuff)
-                print(",".join([str(i) for i in stuff]))
+    # open contents of file "$__hash/ref"
+    try:
+        with open(__hash + "/ref", "r") as ref:
+            layer = ref.read().strip()
+            layer = layer.split(":")[1]
+            print(f"hash={__hash}, layer={layer}")
+    except FileNotFoundError as err:
+        continue
+
+    print("__hash: ", __hash, " from __tid: ", __tid)
+    # Keep reading innerfile until last position before eof
+    for innerline in innerfile:
+        if str(__tid) not in innerline:
+            continue
+        innerobj = json.loads(innerline)
+        if (
+            "process_kprobe" in innerobj
+            and innerobj["process_kprobe"]["process"]["tid"] == __tid
+            and innerobj["process_kprobe"]["function_name"] == "tcp_connect"
+        ):
+            arg = innerobj["process_kprobe"]["args"][0]["sock_arg"]
+            stuff = [
+                __tid, "", arg["sport"], arg["saddr"],
+                arg["dport"], arg["daddr"], layer
+            ]
+            print(",".join([str(i) for i in stuff]), flush=True, file=open("/tmp/iruel.log", "a+"))
+            print(stuff)
+            break
