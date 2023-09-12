@@ -46,6 +46,7 @@ MAPPINGS = {
 
 WINDOW = 10
 CUTOFF_BUFFER = 40
+TICK_INTERVAL = 3
 
 DEFAULT_DIR = "temp_data"
 WORKER2_REPLACEMENTS = {
@@ -133,7 +134,7 @@ def plot_normal(df: pd.DataFrame, plot: str, plot_dir: str):
 
     # Save the figure
     plt.tight_layout()
-    plt.savefig(plot_dir + '/' + plot + '.png')
+    plt.savefig(plot_dir + '/' + plot + '.png', bbox_inches="tight", pad_inches=0.01)
     plt.close()
 
 
@@ -153,8 +154,10 @@ def plot_disk_network(df_disk: pd.DataFrame,
     # Merge the two df by creating a new df (time, disk, network) of only worker2
     df = pd.merge(df_disk, df_network, on='Time')
 
-    if 'Worker2' in df:
+    if 'Worker2' in df or 'Worker2_x' in df:
         df = df[['Time', 'Worker2_x', 'Worker2_y']]
+
+    print(df.head())
     df.rename(
         columns=WORKERXY_REPLACEMENTS,
         inplace=True
@@ -170,8 +173,10 @@ def plot_disk_network(df_disk: pd.DataFrame,
     df['Disk'] = df['Disk'] / 1024 / 1024
     df['Network'] = df['Network'] / 1024 / 1024
 
-    ax = df.plot(x='Time', y='Disk', figsize=(6, 4))
-    df.plot(x='Time', y='Network', ax=ax)
+    print(df.head())
+
+    ax = df.plot(x='Time', y='Disk', figsize=(6, 4), linewidth=1)
+    df.plot(x='Time', y='Network', ax=ax, linewidth=1)
 
     # On the left put the ticks for the disk, on the right the ticks for the network
     ax.set_xlim([-0.01, df['Time'].max() - (df['Time'].max() % 60) + 60 + 0.01])
@@ -186,7 +191,11 @@ def plot_disk_network(df_disk: pd.DataFrame,
 
     for i in range(0, mmax, 60):
         ticks.append(i)
-        labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
+        if i % (60 * TICK_INTERVAL) != 0:
+            labels.append('')
+        else:
+            labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
+
     ax.set_xticks(ticks)
     ax.set_xticklabels(labels, rotation=45)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
@@ -200,7 +209,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
 
     plt.grid(axis='y')
     plt.tight_layout()
-    plt.savefig(plot_dir + '/' + plot_name + '.png')
+    plt.savefig(plot_dir + '/' + plot_name + '.png', bbox_inches="tight", pad_inches=0.01)
     plt.close()
 
 
@@ -260,7 +269,11 @@ def plot_worker2cpu(df: pd.DataFrame,
 
     for i in range(0, mmax, 60):
         ticks.append(i)
-        labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
+        if i % (60*TICK_INTERVAL) != 0:
+            labels.append('')
+        else:
+            labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
+
     ax.set_xticks(ticks)
     ax.set_xticklabels(labels, rotation=45)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
@@ -275,7 +288,7 @@ def plot_worker2cpu(df: pd.DataFrame,
 
     # Save the figure
     plt.tight_layout()
-    plt.savefig(plot_dir + '/' + plot + '.png')
+    plt.savefig(plot_dir + '/' + plot + '.png', bbox_inches="tight", pad_inches=0.01)
 
 
 def main():
@@ -357,13 +370,12 @@ def init(directory: str,
     time *= 60
 
     for plot in plots:
-        sns.set(rc={'figure.figsize': (6, 4), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=.9)
-
-        sns.set_style('whitegrid')
         sns.set_context('paper')
-        sns.set_palette('colorblind')
+        sns.set(rc={'figure.figsize': (12, 10), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.3)
+        sns.set_style('whitegrid')
 
         if plot == "worker2cpu":
+            sns.set_palette(['deepskyblue', "darkslateblue", "grey"])
             df = pd.read_csv(data_dir + '/' + plot, sep=';')
 
             plot_worker2cpu(df,
@@ -372,6 +384,7 @@ def init(directory: str,
                             cutoff_seconds=co,
                             plot_dir=plot_dir)
         elif plot == "disk_w+network_r":
+            sns.set_palette(['deepskyblue', 'darkslateblue'])
             df_disk = pd.read_csv(data_dir + '/' + 'disk_w', sep=';')
             df_network = pd.read_csv(data_dir + '/' + 'network_r', sep=';')
 
