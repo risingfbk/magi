@@ -133,7 +133,7 @@ sleep 10
 
 docker exec tetragon-container tetra getevents -o json > $IRUEL_TMP &
 
-python3 iruel.py
+python3 iruel.py &
 pid="$pid $!"
 
 echo "Starting monitoring..."
