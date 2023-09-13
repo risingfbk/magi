@@ -234,8 +234,8 @@ def plot_worker2cpu(df: pd.DataFrame,
     df['Time'] = df.index
 
     # Trim the table at the cutoff if passed
-    if cutoff_seconds is not None and cutoff_seconds > 0:
-        df = df[df['Time'] <= cutoff_seconds]
+    #if cutoff_seconds is not None and cutoff_seconds > 0:
+    #    df = df[df['Time'] <= cutoff_seconds]
 
     # reorder the columns
     df = df[['Time', 'System', 'User', 'IOWait', 'Idle', 'Nice', 'SoftIRQ', 'Steal', 'IRQ']]

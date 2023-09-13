@@ -47,6 +47,9 @@ ax2.set_yticklabels(range(25, 90, 10))
 
 ax.set_yticks(np.arange(len(images)))
 ax.set_yticklabels(images)
+ax.set_xticks(range(0, 67, 4))
+ax.set_xticklabels([i//4 for i in range(0, 67, 4)])
+
 ax.set_xlim(0, 67)
 ax.set_ylim(-0.5, 6.5)
 
