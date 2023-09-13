@@ -238,7 +238,7 @@ def plot_worker2cpu(df: pd.DataFrame,
         df = df[df['Time'] <= cutoff_seconds]
 
     # reorder the columns
-    df = df[['Time', 'User', 'System', 'IOWait', 'Idle', 'Nice', 'SoftIRQ', 'Steal', 'IRQ']]
+    df = df[['Time', 'System', 'User', 'IOWait', 'Idle', 'Nice', 'SoftIRQ', 'Steal', 'IRQ']]
 
     # normalize each data row s.t. the sum of all values is 1
     for i, row in df.iterrows():
@@ -375,7 +375,7 @@ def init(directory: str,
         sns.set_style('whitegrid')
 
         if plot == "worker2cpu":
-            sns.set_palette(['#4884cf', "#17374d", "lightgrey"])
+            sns.set_palette(["#17374d", '#4884cf', "lightgrey"])
             df = pd.read_csv(data_dir + '/' + plot, sep=';')
 
             plot_worker2cpu(df,
