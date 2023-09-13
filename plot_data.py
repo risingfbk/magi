@@ -176,7 +176,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
     print(df.head())
 
     ax = df.plot(x='Time', y='Disk', figsize=(6, 4), linewidth=1)
-    df.plot(x='Time', y='Network', ax=ax, linewidth=1)
+    df.plot(x='Time', y='Network', ax=ax, linewidth=1.2)
 
     # On the left put the ticks for the disk, on the right the ticks for the network
     ax.set_xlim([-0.01, df['Time'].max() - (df['Time'].max() % 60) + 60 + 0.01])
@@ -375,7 +375,7 @@ def init(directory: str,
         sns.set_style('whitegrid')
 
         if plot == "worker2cpu":
-            sns.set_palette(['deepskyblue', "darkslateblue", "grey"])
+            sns.set_palette(['#4884cf', "#17374d", "lightgrey"])
             df = pd.read_csv(data_dir + '/' + plot, sep=';')
 
             plot_worker2cpu(df,
@@ -384,7 +384,7 @@ def init(directory: str,
                             cutoff_seconds=co,
                             plot_dir=plot_dir)
         elif plot == "disk_w+network_r":
-            sns.set_palette(['deepskyblue', 'darkslateblue'])
+            sns.set_palette(['#4884cf', '#17374d'])
             df_disk = pd.read_csv(data_dir + '/' + 'disk_w', sep=';')
             df_network = pd.read_csv(data_dir + '/' + 'network_r', sep=';')
 
