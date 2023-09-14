@@ -27,7 +27,7 @@ duration_a = {
 }
 
 sns.set_context('paper')
-sns.set(rc={'figure.figsize': (15, 10), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.8)
+sns.set(rc={'figure.figsize': (15, 6), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.35)
 sns.set_style('whitegrid')
 sns.set_palette(['#4884cf'])  # , "#17374d", "lightgrey"])
 
