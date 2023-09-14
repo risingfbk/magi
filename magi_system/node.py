@@ -32,6 +32,8 @@ def alert():
         return {"result": f"Requesting removal of image {image} from queue"}, 202
     else:
         log.info(f"Image {image} not in queue, adding to blacklist")
+        if image not in blacklist:
+            blacklist.append(image)
         return {"result": f"Image {image} not in queue, blacklisting"}, 404
 
 
