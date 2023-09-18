@@ -15,19 +15,19 @@ images_a = {
 }
 
 t_a = {
-    0: [0, 50, 70, 92, 93, 0],
+    0: [0,     50, 70, 92, 93, 0],
     1: [0, 20, 50, 71, 92, 94, 0],
     2: [0, 20, 50, 70, 98, 104, 0]
 }
 
 duration_a = {
-    0: [460, 512, 495, 500, 555, 0],
+    0: [460,       512,  495,  500,  555,  0],
     1: [474, 2050, 2128, 2131, 2203, 2240, 0],
-    2: [369, 550, 668, 672, 698, 735, 0]
+    2: [420, 550,  668,  672,  698,  735,  0]
 }
 
 sns.set_context('paper')
-sns.set(rc={'figure.figsize': (15, 6), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.35)
+sns.set(rc={'figure.figsize': (15, 5.8), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.35)
 sns.set_style('whitegrid')
 sns.set_palette(['#4884cf'])  # , "#17374d", "lightgrey"])
 
@@ -46,15 +46,15 @@ for qq in range(len(axs)):
         previous_completion_time = t[i - 1] + duration[i - 1]
         download_time = max(duration[i] + t[i] - previous_completion_time, 15)
 
-        ax.barh(i, duration[i] - download_time, alpha=1, height=0.2,
-                align='center', edgecolor='white', left=t[i], hatch="|", color="#cccccc")
+        ax.barh(i, duration[i] - download_time, alpha=0.7, height=0.25,
+                align='center', edgecolor='white', left=t[i], hatch="|-|", color="grey")
         if images[i] != "attack":
-            ax.barh(i, download_time, alpha=1, height=0.3,
+            ax.barh(i, download_time, alpha=1, height=0.55,
                     align='center', edgecolor='white', left=t[i] + duration[i] - download_time)
         else:
-            ax.barh(i, download_time, alpha=1, height=0.3,
+            ax.barh(i, download_time, alpha=0.8, height=0.55,
                     align='center', edgecolor='white', left=t[i] + duration[i] - download_time,
-                    color="red", hatch="X")
+                    color="black", hatch="X")
 
         if i == len(images) - 2:
             ax.vlines([duration[i] + t[i]], 0 - 0.5, len(images) - 2 + 0.5,

@@ -384,7 +384,7 @@ def init(directory: str,
                             cutoff_seconds=co,
                             plot_dir=plot_dir)
         elif plot == "disk_w+network_r":
-            sns.set_palette(['#4884cf', '#17374d'])
+            sns.set_palette(['lightgrey', '#17374d'])
             df_disk = pd.read_csv(data_dir + '/' + 'disk_w', sep=';')
             df_network = pd.read_csv(data_dir + '/' + 'network_r', sep=';')
 
