@@ -46,7 +46,7 @@ MAPPINGS = {
 
 WINDOW = 10
 CUTOFF_BUFFER = 40
-TICK_INTERVAL = 3
+TICK_INTERVAL = 4
 
 DEFAULT_DIR = "temp_data"
 WORKER2_REPLACEMENTS = {
@@ -105,7 +105,7 @@ def plot_normal(df: pd.DataFrame, plot: str, plot_dir: str):
         },
         inplace=True
     )
-    ax = df.plot(x='Time', y='Worker', figsize=(6, 4))
+    ax = df.plot(x='Time', y='Worker')
     # df.plot(x='Time', y='Worker1', ax=ax)
     # df.plot(x='Time', y='Worker2', ax=ax)
     # df.plot(x='Time', y='Registry', ax=ax)
@@ -175,7 +175,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
 
     print(df.head())
 
-    ax = df.plot(x='Time', y='Disk', figsize=(6, 4), linewidth=1)
+    ax = df.plot(x='Time', y='Disk', linewidth=1)
     df.plot(x='Time', y='Network', ax=ax, linewidth=1.2)
 
     # On the left put the ticks for the disk, on the right the ticks for the network
@@ -190,22 +190,23 @@ def plot_disk_network(df_disk: pd.DataFrame,
         mmax = seconds
 
     for i in range(0, mmax, 60):
-        ticks.append(i)
-        if i % (60 * TICK_INTERVAL) != 0:
-            labels.append('')
-        else:
+        if i % (60*TICK_INTERVAL) == 0:
+            ticks.append(i)
             labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
 
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels, rotation=45)
+    ax.set_xticklabels(labels, rotation=30)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
     ax.set_ylim([-0.01, 175])
+    plt.setp(ax.get_xticklabels(), color="black")
+    plt.setp(ax.get_yticklabels(), color="black")
 
     ax.set_xlabel('Time')
     ax.set_ylabel(MAPPINGS[plot_name]['ylabel'])
     ax.set_title(MAPPINGS[plot_name]['title'])
 
     # print(df.head())
+    #plt.legend().set_visible(False)
 
     plt.grid(axis='y')
     plt.tight_layout()
@@ -258,7 +259,7 @@ def plot_worker2cpu(df: pd.DataFrame,
 
     # use a palette that colors the bars in the same color as the lines
     # plot a barplot. in each row, stack all the values that are at time t, t+60
-    ax = df.plot.area(x='Time', y=df.columns[1:4], stacked=True, figsize=(6, 4))
+    ax = df.plot.area(x='Time', y=df.columns[1:4], stacked=True)
 
     ticks = []
     labels = []
@@ -268,21 +269,24 @@ def plot_worker2cpu(df: pd.DataFrame,
         mmax = seconds
 
     for i in range(0, mmax, 60):
-        ticks.append(i)
-        if i % (60*TICK_INTERVAL) != 0:
-            labels.append('')
-        else:
+        if i % (60*TICK_INTERVAL) == 0:
+            ticks.append(i)
             labels.append(datetime.datetime.utcfromtimestamp(i).strftime('%M:%S'))
 
     ax.set_xticks(ticks)
-    ax.set_xticklabels(labels, rotation=45)
+    ax.set_xticklabels(labels, rotation=30)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
     ax.set_ylim(0, 100)
+    plt.setp(ax.get_xticklabels(), color="black")
+    plt.setp(ax.get_yticklabels(), color="black")
 
     # Set the labels
     ax.set_xlabel('Time')
     ax.set_ylabel(MAPPINGS[plot]['ylabel'])
     ax.set_title(MAPPINGS[plot]['title'])
+
+    # pls hide the legend
+    # plt.legend().set_visible(False)
 
     # print(df.head())
 
@@ -371,8 +375,15 @@ def init(directory: str,
 
     for plot in plots:
         sns.set_context('paper')
-        sns.set(rc={'figure.figsize': (12, 10), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.3)
-        sns.set_style('whitegrid')
+        sns.set(rc={'figure.figsize': (6, 3.5), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.3)
+        style = sns.axes_style("whitegrid")
+        style['xtick.bottom'] = True
+        style["xtick.color"] = ".8"
+        style['ytick.left'] = True
+        style["ytick.color"] = ".8"
+
+        sns.set_style(style)
+        sns.despine()
 
         if plot == "worker2cpu":
             sns.set_palette(["#17374d", '#4884cf', "lightgrey"])
