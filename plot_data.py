@@ -201,7 +201,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
     plt.setp(ax.get_xticklabels(), color="black")
     plt.setp(ax.get_yticklabels(), color="black")
 
-    ax.set_xlabel('Time')
+    ax.set_xlabel('Time (mm:ss)')
     ax.set_ylabel(MAPPINGS[plot_name]['ylabel'])
     ax.set_title(MAPPINGS[plot_name]['title'])
 
@@ -281,7 +281,7 @@ def plot_worker2cpu(df: pd.DataFrame,
     plt.setp(ax.get_yticklabels(), color="black")
 
     # Set the labels
-    ax.set_xlabel('Time')
+    ax.set_xlabel('Time (mm:ss)')
     ax.set_ylabel(MAPPINGS[plot]['ylabel'])
     ax.set_title(MAPPINGS[plot]['title'])
 
