@@ -27,7 +27,7 @@ duration_a = {
 }
 
 sns.set_context('paper')
-sns.set(rc={'figure.figsize': (15, 5.8), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.35)
+sns.set(rc={'figure.figsize': (15, 4.8), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.22)
 sns.set_style('whitegrid')
 sns.set_palette(['#4884cf'])  # , "#17374d", "lightgrey"])
 
@@ -46,13 +46,13 @@ for qq in range(len(axs)):
         previous_completion_time = t[i - 1] + duration[i - 1]
         download_time = max(duration[i] + t[i] - previous_completion_time, 15)
 
-        ax.barh(i, duration[i] - download_time, alpha=0.7, height=0.25,
-                align='center', edgecolor='white', left=t[i], hatch="|-|", color="grey")
+        ax.barh(i, duration[i] - download_time, alpha=0.7, height=0.5,
+                align='center', edgecolor='white', left=t[i], hatch="||", color="orange")
         if images[i] != "attack":
-            ax.barh(i, download_time, alpha=1, height=0.55,
-                    align='center', edgecolor='white', left=t[i] + duration[i] - download_time)
+            ax.barh(i, download_time, alpha=1, height=0.5,
+                    align='center', edgecolor='white', left=t[i] + duration[i] - download_time, hatch="")
         else:
-            ax.barh(i, download_time, alpha=0.8, height=0.55,
+            ax.barh(i, download_time, alpha=0.8, height=0.5,
                     align='center', edgecolor='white', left=t[i] + duration[i] - download_time,
                     color="black", hatch="X")
 
