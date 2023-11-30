@@ -6,8 +6,8 @@ import matplotlib.dates as mdates
 import os
 import datetime
 import argparse
-import json
-from secret_parameters import main_registry
+
+from parameters import main_registry
 
 MAPPINGS = {
     'cpu': {
