@@ -1,0 +1,7 @@
+layout anaconda kube
+
+export PROMETHEUS_HOST=
+export REGISTRY_IP_LOCAL=
+export REGISTRY_IP_DOMAIN=
+export REGISTRY_USERNAME=
+export REGISTRY_PASSWORD=
