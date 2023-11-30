@@ -85,7 +85,12 @@ docker compose up -d
 ```
 
 You will now have a fresh registry up and running. It may only be accessed with the credentials found in the `auth` folder.
-The default user is `testuser` and the default password is `testpassword`. You may change them by editing the `htpasswd` file.
+The default user is `testuser` and the default password is `testpassword`. You may change them by editing the `htpasswd` file. To create a new account and remove the default one, use the `htpasswd` command:
+
+```shell
+apt install apache2-utils
+htpasswd -cBb ./auth/htpasswd <user> <pass>
+```
 
 Now, we need to make sure the registry is accessible from both the host machine and the k8s nodes.
 To do so, we need to generate a certificate for the registry. We will use the excellent `nip.io` service to resolve the
@@ -107,6 +112,13 @@ With Let's Encrypt:
 
 ```shell
 certbot certonly --standalone --preferred-challenges http --non-interactive --staple-ocsp --agree-tos -m mfranzil@fbk.eu -d ${REGISTRY_IP_DOMAIN}
+```
+
+After obtaining the certificates, you can convert them to `.crt` and `.key` format using the following commands:
+
+```shell
+sudo openssl x509 -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/fullchain.pem -out certs/domain.crt
+sudo openssl rsa -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/privkey.pem -out certs/domain.key
 ```
 
 The certificate will be valid for the `${REGISTRY_IP_DOMAIN}` domain. You may change it to whatever you want, but remember to change it everywhere.

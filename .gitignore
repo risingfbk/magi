@@ -1,12 +1,12 @@
 __pycache__
 
+.envrc
 *.mp4
 join.sh
 temp_data
 .vagrant
 .idea
 logs
-prometheus_queries.url
 
 sisyphus/*.txt
 raspberry/cloud-init.yml
