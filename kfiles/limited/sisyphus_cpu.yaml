@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: sisyphus-container
-          image: registry-192-168-200-12.nip.io/mfranzil/sisyphus:4
+          image: $REGISTRY_IP_DOMAIN/mfranzil/sisyphus:4
           args: ["cpu"]
           resources:
               limits:

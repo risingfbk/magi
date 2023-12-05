@@ -4,4 +4,4 @@ metadata:
   name: default
   namespace: limited
 imagePullSecrets:
-  - name: regcred2
+  - name: regcred

@@ -38,7 +38,7 @@ spec:
     spec:
       containers:
         - name: iperf-container
-          image: registry-192-168-200-12.nip.io/mfranzil/custom-iperf:2
+          image: $REGISTRY_IP_DOMAIN/mfranzil/custom-iperf:2
           args: ["-s"]
           ports:
             - containerPort: 5201
