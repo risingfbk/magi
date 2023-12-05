@@ -1,0 +1,3 @@
+kubeletConfig:
+  maxParallelImagePulls: 2
+  serializeImagePulls: false
