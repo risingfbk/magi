@@ -1,6 +1,10 @@
 #!/bin/zsh
 
-STYX=styx
+if [[ -z "$STYX" ]]; then
+    echo "Please provide a Styx executable via an environment variable."
+    exit
+fi
+
 QUERIES=prometheus_queries
 
 if [[ -z "$3" ]]; then
