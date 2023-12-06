@@ -5,6 +5,9 @@ if [[ -z $REGISTRY_IP_DOMAIN ]]; then
     exit
 fi
 
+TIME_BETWEEN_DEPLOY_DELETE=${TIME_BETWEEN_DEPLOY_DELETE:-20}
+TIME_BETWEEN_DIFFERENT_DEPLOYS=${TIME_BETWEEN_DIFFERENT_DEPLOYS:-10}
+
 # Randomize the order of the pods
 for i in $(seq 1 7 | shuf); do
     echo "Applying $i"
@@ -21,6 +24,9 @@ spec:
     image: $REGISTRY_IP_DOMAIN/mfranzil/5gb:$i
 EOF
     kubectl apply -f "$name"
-    sleep 2
+    sleep $TIME_BETWEEN_DEPLOY_DELETE 
     kubectl delete -f "$name" --force --grace-period=0
+    sleep $TIME_BETWEEN_DIFFERENT_DEPLOYS
 done
+
+kubectl -n limited run --image nginx:latest nginx
