@@ -18,7 +18,7 @@ mkdir -p $EXPORT_FOLDER
 TS=${1:-'2023-05-19T07:08:20'}
 DURATION=${2-:16m}
 
-for i in "${(@f)"$(<${QUERIES})"}"; do 
+for i in "${(@f)"$(envsubst < ${QUERIES})"}"; do 
     echo "Exporting $i..."
     name="$(echo $i | cut -f 1 -d =)"
     query="$(echo $i | cut -f 2- -d =)"
