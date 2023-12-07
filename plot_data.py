@@ -7,7 +7,7 @@ import os
 import datetime
 import argparse
 
-from parameters import main_registry
+from parameters import main_registry, main_node
 
 MAPPINGS = {
     'cpu': {
@@ -74,13 +74,16 @@ DISKNETWORK_REPLACEMENTS = {
     '{instance="192.168.200.10:9100"}': 'Master',
     '{instance="192.168.200.11:9100"}': 'Worker1',
     '{instance="192.168.200.12:9100"}': 'Registry',
+    '{instance="' + main_node + ':9100"}': 'Worker2',
     '{instance="' + main_registry + ':9100"}': 'Registry',
     '{instance="192.168.221.10:9100",job="prometheus"}': 'Master',
     '{instance="192.168.221.11:9100",job="prometheus"}': 'Worker1',
     '{instance="192.168.221.12:9100",job="prometheus"}': 'Worker2',
+    '{instance="' + main_node + ':9100,job="prometheus"}': 'Worker2',
     '{instance="' + main_registry + ':9100",job="prometheus"}': 'Registry',
 }
 
+NETWORK_MAX = 266 # 175
 
 def plot_normal(df: pd.DataFrame, plot: str, plot_dir: str):
     df.rename(
@@ -170,6 +173,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
     if cutoff_seconds is not None and cutoff_seconds > 0:
         df = df[df['Time'] <= cutoff_seconds]
 
+    print(df.head())
     df['Disk'] = df['Disk'] / 1024 / 1024
     df['Network'] = df['Network'] / 1024 / 1024
 
@@ -197,7 +201,7 @@ def plot_disk_network(df_disk: pd.DataFrame,
     ax.set_xticks(ticks)
     ax.set_xticklabels(labels, rotation=30)
     ax.set_xlim([-0.01, mmax - 60 + 0.01])
-    ax.set_ylim([-0.01, 175])
+    ax.set_ylim([-0.01, NETWORK_MAX])
     plt.setp(ax.get_xticklabels(), color="black")
     plt.setp(ax.get_yticklabels(), color="black")
 
