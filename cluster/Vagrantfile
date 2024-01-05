@@ -5,7 +5,7 @@ Vagrant.configure("2") do |config|
   config.vm.define :master do |master|
     # master.vm.disk :disk, size: "50GB", primary: true
     master.vm.hostname = "master"
-    master.vm.synced_folder "./", "/vagrant", type: "nfs"
+    master.vm.synced_folder "./", "/vagrant", type: "nfs", nfs_udp: false
     master.vm.network :private_network,
       :libvirt__network_name => "k8s",
       :ip => "192.168.221.10"
@@ -18,7 +18,7 @@ Vagrant.configure("2") do |config|
     config.vm.define name do |worker|
       # worker.vm.disk :disk, size: "80GB", primary: true
       worker.vm.hostname = name
-      worker.vm.synced_folder "./", "/vagrant", type: "nfs"
+      worker.vm.synced_folder "./", "/vagrant", type: "nfs", nfs_udp: false
       worker.vm.network :private_network,
         :libvirt__network_name => "k8s",
         :ip => "192.168.221.#{i + 11}"
@@ -55,6 +55,13 @@ end
 
 
 $install_common_tools = <<-SHELL
+# noninteractive
+export DEBIAN_FRONTEND=noninteractive
+
+# main packages
+apt-get update
+apt-get install -y python3-pip ca-certificates curl gnupg conntrack socat
+pip install jsonlines setuptools flask
 
 # node_exporter
 wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
@@ -82,21 +89,22 @@ sudo sysctl -p
 swapoff -a
 sed -i '/swap/d' /etc/fstab
 
-# noninteractive
-export DEBIAN_FRONTEND=noninteractive
-
 # Docker keyrings
 sudo install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
 sudo chmod a+r /etc/apt/keyrings/docker.gpg
 
+# Docker repo
 echo \
-"deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-"$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
+  tee /etc/apt/sources.list.d/docker.list > /dev/null
 
+# Docker and containerd
+for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get remove $pkg; done
 apt-get update
-apt-get install -y containerd.io conntrack socat
+apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
 
 # k8s
 # ---------------------------------------------------------
@@ -166,11 +174,9 @@ curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
 tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh
 
-apt-get install -yqq python3-pip linux-headers-$(uname -r) bison build-essential \
-  cmake flex g++ git libelf-dev zlib1g-dev libfl-dev systemtap-sdt-dev binutils-dev llvm-8-dev llvm-8-runtime \
-  libclang-8-dev clang-8 arping netperf iperf3 python3-distutils jq
-
-pip install setuptools flask
+sudo apt install -y zip bison build-essential cmake flex git libedit-dev \
+  libllvm14 llvm-14-dev libclang-14-dev python3 zlib1g-dev libelf-dev libfl-dev python3-setuptools \
+  liblzma-dev libdebuginfod-dev arping netperf iperf 
 
 cd /tmp
 wget https://github.com/iovisor/bcc/releases/download/v0.24.0/bcc-src-with-submodule.tar.gz
@@ -180,30 +186,12 @@ cmake -DPYTHON_CMD=python3 ..
 make -j8 && make install && ldconfig
 
 cd /tmp
-git clone https://github.com/mfranzil/containerdsnoop
+git clone https://github.com/risingfbk/containerdsnoop
 cd containerdsnoop
 go build -o containerdsnoop
 mv containerdsnoop /usr/local/bin/containerdsnoop
 
 depmod
-
-# Install Docker
-for pkg in docker.io docker-doc docker-compose podman-docker containerd runc; do apt-get remove $pkg; done
-# Add Docker's official GPG key:
-apt-get update
-apt-get install ca-certificates curl gnupg
-install -m 0755 -d /etc/apt/keyrings
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg
-chmod a+r /etc/apt/keyrings/docker.gpg
-
-# Add the repository to Apt sources:
-echo \
-  "deb [arch="$(dpkg --print-architecture)" signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
-  "$(. /etc/os-release && echo "$VERSION_CODENAME")" stable" | \
-  tee /etc/apt/sources.list.d/docker.list > /dev/null
-apt-get update
-apt-get install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
-
 SHELL
 
 $provision_master_node = <<-SHELL
