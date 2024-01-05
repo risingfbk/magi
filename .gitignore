@@ -17,3 +17,6 @@ kfiles/limited/tinker
 kfiles/images/randommb/Dockerfile
 kfiles/images/randomgb/Dockerfile
 kfiles/limited/exp*/*-generated.yml
+
+log.json
+tcp.json
