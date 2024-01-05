@@ -185,12 +185,6 @@ mkdir bcc/build; cd bcc/build
 cmake -DPYTHON_CMD=python3 ..
 make -j8 && make install && ldconfig
 
-cd /tmp
-git clone https://github.com/risingfbk/containerdsnoop
-cd containerdsnoop
-go build -o containerdsnoop
-mv containerdsnoop /usr/local/bin/containerdsnoop
-
 depmod
 SHELL
 
