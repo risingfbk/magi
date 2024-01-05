@@ -14,41 +14,9 @@ The master component must be deployed on the Kubernetes master node, while the n
 ## Installation
 
 The MAGI System can be installed on any Kubernetest cluster with version v1.26 or higher. The pre-requisites are already pre-installed
-within the Vagrantfile in the cluster. If installing manually, please run this script as `root`.
+within the Vagrantfile in the cluster: thus, please either make sure you are using the provided Vagrantfile, or install the packages on the host using the script within the Vagrantfile itself. At the end of the installation, [BCC](https://github.com/iovisor/bcc) version 0.24 and Go version 1.20 will be available on the system.
 
-```bash
-export PATH="$PATH:/usr/local/go/bin"
-export CGO_ENABLED=1
-export GOHOSTARCH=amd64
-export GOARCH=amd64
-
-# Install BCC and Go for containerdsnoop tests
-curl -sLO https://dl.google.com/go/go1.20.4.linux-amd64.tar.gz
-tar -C /usr/local -xzf go1.20.4.linux-amd64.tar.gz
-echo 'export PATH=$PATH:/usr/local/go/bin' > /etc/profile.d/golang.sh
-
-apt-get install -yqq python3-pip linux-headers-$(uname -r) bison build-essential \
-  cmake flex g++ git libelf-dev zlib1g-dev libfl-dev systemtap-sdt-dev binutils-dev llvm-8-dev llvm-8-runtime \
-  libclang-8-dev clang-8 arping netperf iperf3 python3-distutils
-
-pip install setuptools
-  
-wget https://github.com/iovisor/bcc/releases/download/v0.24.0/bcc-src-with-submodule.tar.gz
-tar xvf bcc-src-with-submodule.tar.gz && rm bcc-src-with-submodule.tar.gz
-mkdir bcc/build; cd bcc/build
-cmake -DPYTHON_CMD=python3 ..
-make -j8 && make install && ldconfig
-
-cd /tmp && \
-    git clone https://github.com/mfranzil/containerdsnoop && \
-    cd containerdsnoop && \
-    go build -o containerdsnoop && \  
-    sudo mv containerdsnoop /usr/local/bin/containerdsnoop
-
-depmod
-```
-
-These steps will install [BCC](https://github.com/iovisor/bcc) version 0.24, Go version 1.20, and the [containerdsnoop](https://github.com/mfranzil/containerdsnoop) tool on the system.
+Next, make sure to clone this repository with submodules. This will allow the `containerdsnoop` and `imagesnoop` sub-tools to be available on the system.
 
 Next, make sure each node is able to talk with each other using domain names. This can be done by adding the following lines to the `/etc/hosts` file of each node:
 
