@@ -60,7 +60,7 @@ export DEBIAN_FRONTEND=noninteractive
 
 # main packages
 apt-get update
-apt-get install -y python3-pip ca-certificates curl gnupg conntrack socat
+apt-get install -y python3-pip ca-certificates curl gnupg conntrack socat jq
 pip install jsonlines setuptools flask
 
 # node_exporter
