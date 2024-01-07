@@ -1,6 +1,7 @@
 __pycache__
 
-.envrc
+.envrc*
+!.envrc.example
 *.mp4
 join.sh
 temp_data
