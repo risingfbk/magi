@@ -3,7 +3,7 @@ import json
 import logging as log
 import os
 import threading
-from time import sleep
+import time
 
 from flask import Flask, request, abort
 
@@ -16,6 +16,8 @@ blacklist = []
 ports = {}
 
 watch_mode = False
+
+MAX_TERMINATION_ATTEMPTS = 4
 
 
 @app.route('/alert', methods=['POST'])
@@ -47,14 +49,14 @@ def show_queue():
         if str(blacklist) != old_blackliststr:
             log.info(f"Blacklist: {blacklist}")
             old_blackliststr = str(blacklist)
-        sleep(5)
+        time.sleep(5)
 
 
 def port_mappings(iruellines):
     for line in iruellines:
         try:
-            # "$pid,$fd,$sport,$saddr,$dport,$daddr,$layer"
-            pid, _, port, _, _, _, layer = line.split(",")
+            # "$pid,$sport,$saddr,$dport,$daddr,$layer"
+            pid, port, _, _, _, layer = line.split(",")
             port = int(port)
             layer = layer.strip()
             if layer not in ports:
@@ -72,15 +74,22 @@ def terminate_download(image):
         return
 
     image_fullname, tag = image.split(":")
-    splt = image_fullname.split("/")
-    if len(splt) == 2:  # image is from dockerhub
-        registry_domain = "index.docker.io"
-        image_name = splt[0] + "/" + splt[1]
-    elif len(splt) == 3:  # image is from a private registry
-        registry_domain = splt[0]
-        image_name = splt[1] + "/" + splt[2]
+
+    # Possible image names:
+    # docker.io/library/hello-world
+    # private.registry.com:5000/library/hello-world
+    # docker.io/hello-world
+    # anotherregistry.k8s.io/library/hello-world
+
+    split = image_fullname.split("/")
+    if len(split) == 3:
+        registry_domain = split[0]
+        image_name = split[1] + "/" + split[2] 
+    elif len(split) == 2:
+        registry_domain = split[0]
+        image_name = split[1]
     else:
-        log.warning(f"Image {image} is not from dockerhub or a private registry")
+        log.warning(f"Weird image name: {image_fullname}")
         return
 
     registry_ip = os.popen(f"dig +short {registry_domain} | grep '.'").read().strip()
@@ -90,15 +99,24 @@ def terminate_download(image):
     layer_command = "./shamshel.sh"
     layer_hashes = []
     result = [json.loads(line) for line in os.popen(layer_command).read().strip().split("\n")]
-    for avail_image in result:
-        if avail_image["repo"] + "/" + avail_image["name"] in image_fullname:  # TODO tag missing
-            # Append each layer hash to the list without sublists
-            layer_hashes += avail_image["layers"]
 
-    if layer_hashes == []:
-        raise Exception(f"Could not find layer hashes for {image}, result: {result}")
-    else:
-        log.debug(f"Obtained layer hashes for {image}: {layer_hashes}")
+    for attempt in range(MAX_TERMINATION_ATTEMPTS):
+        for avail_image in result:
+            avail_image_name = avail_image["repo"] + "/" + avail_image["name"]
+            print(f"/{avail_image_name}/ == /{image_fullname}/?")
+            if image_fullname == avail_image_name or image_fullname in avail_image_name:
+                # TODO tag missing
+                # Append each layer hash to the list without sublists
+                layer_hashes += avail_image["layers"]
+
+        if layer_hashes == []:
+            if attempt == MAX_TERMINATION_ATTEMPTS:
+                raise Exception(f"Could not find layer hashes for {image}, result: {result}. Attempted {attempt} times")
+            time.sleep(2)
+            continue 
+        else:
+            log.debug(f"Obtained layer hashes for {image}: {layer_hashes}")
+            break
 
     # layer_command = f"curl -X GET -u {passwords} https://{registry_domain}/v2/{image_name}/manifests/{tag}
     # 2>/dev/null | jq '.fsLayers[].blobSum' | uniq | tr -d '\"' | cut -f 2 -d : | sort"
@@ -110,20 +128,20 @@ def terminate_download(image):
     log.info(f"Terminating download of image {image} from node {node_source} using registry {registry_ip}")
 
     # Obtain ports to terminate. Try it 4 times, waiting 3 seconds between each try
-    # for _ in range(4):
-    for layer in layer_hashes:
-        if layer not in ports:
-            log.warning(f"Layer {layer} not found in ports (ports: {ports})")
-            continue
-        layer_ports = ports[layer]
-        for layer_port in layer_ports:
-            command = f"ss -K src {node_source} sport = {layer_port}"
-            result = os.popen(command).read().strip()
-            # if results more than 1 line then something was killed
-            if len(result.split("\n")) > 1:
-                log.info(f"Terminated download of layer {layer} on port {layer_port}")  # log.info(f"Result: {result}")
-        ports[layer] = []  # Empty ports for this layer
-    # sleep(3)
+    for _ in range(MAX_TERMINATION_ATTEMPTS):
+        for layer in layer_hashes:
+            if layer not in ports:
+                log.warning(f"Layer {layer} not found in ports (ports: {ports})")
+                continue
+            layer_ports = ports[layer]
+            for layer_port in layer_ports:
+                command = f"ss -K src {node_source} sport = {layer_port}"
+                result = os.popen(command).read().strip()
+                # if results more than 1 line then something was killed
+                if len(result.split("\n")) > 1:
+                    log.info(f"Terminated download of layer {layer} on port {layer_port}")  # log.info(f"Result: {result}")
+            ports[layer] = []  # Empty ports for this layer
+        time.sleep(3)
 
     # command = f'netstat -apeen | grep $(pgrep containerd | xargs ps | grep "containerd$" | ' \
     #           f'cut -f 1 -d " ")/containerd | grep tcp | grep {registry_ip} | sed -E " s/ +/ /g" | ' \
