@@ -103,9 +103,9 @@ Finally, remember to set the `REGISTRY_IP_DOMAIN` variable to the domain name yo
 ```shell
 REGISTRY_IP_DOMAIN=${REGISTRY_IP_DOMAIN:-registry-1-2-3.4.nip.io}
 openssl req \
-  -newkey rsa:4096 -nodes -sha256 -keyout certs/domain.key \
+  -newkey rsa:4096 -nodes -sha256 -keyout certs/${REGISTRY_IP_DOMAIN}.key \
   -addext "subjectAltName = DNS:${REGISTRY_IP_DOMAIN}" \
-  -x509 -days 365 -out certs/domain.crt
+  -x509 -days 365 -out certs/${REGISTRY_IP_DOMAIN}.crt
 ```
 
 With Let's Encrypt:
@@ -117,8 +117,8 @@ certbot certonly --standalone --preferred-challenges http --non-interactive --st
 After obtaining the certificates, you can convert them to `.crt` and `.key` format using the following commands:
 
 ```shell
-sudo openssl x509 -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/fullchain.pem -out certs/domain.crt
-sudo openssl rsa -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/privkey.pem -out certs/domain.key
+sudo openssl x509 -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/fullchain.pem -out certs/${REGISTRY_IP_DOMAIN}.crt
+sudo openssl rsa -in /etc/letsencrypt/live/${REGISTRY_IP_DOMAIN}/privkey.pem -out certs/${REGISTRY_IP_DOMAIN}.key
 ```
 
 The certificate will be valid for the `${REGISTRY_IP_DOMAIN}` domain. You may change it to whatever you want, but remember to change it everywhere.
@@ -126,30 +126,30 @@ The certificate will be valid for the `${REGISTRY_IP_DOMAIN}` domain. You may ch
 Now, copy the certificate in each k8s node:
 
 ```shell
-vagrant scp ./certs/domain.crt master:domain.crt
-vagrant scp ./certs/domain.crt worker1:domain.crt
-vagrant scp ./certs/domain.crt worker2:domain.crt
+vagrant scp ./certs/${REGISTRY_IP_DOMAIN}.crt master:${REGISTRY_IP_DOMAIN}.crt
+vagrant scp ./certs/${REGISTRY_IP_DOMAIN}.crt worker1:${REGISTRY_IP_DOMAIN}.crt
+vagrant scp ./certs/${REGISTRY_IP_DOMAIN}.crt worker2:${REGISTRY_IP_DOMAIN}.crt
 ```
 
-and update the certificates on each node:
+and update the certificates on each node (you can alternatively use the helper script within the registry/ folder):
 
 ```shell
-vagrant ssh master -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
-vagrant ssh worker1 -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
-vagrant ssh worker2 -c "sudo cp ~/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+vagrant ssh master -c "sudo cp ~/${REGISTRY_IP_DOMAIN}.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+vagrant ssh worker1 -c "sudo cp ~/${REGISTRY_IP_DOMAIN}.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
+vagrant ssh worker2 -c "sudo cp ~/${REGISTRY_IP_DOMAIN}.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates && sudo systemctl restart containerd"
 ```
 
 Finally, update the host machine certificates:
 
 ```shell
-cp ./certs/domain.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates
+sudo cp ./certs/${REGISTRY_IP_DOMAIN}.crt /usr/local/share/ca-certificates/ && sudo update-ca-certificates
 ```
 
 On the host machine, we will also copy the certificate to the Docker certificates directory. This will allow us to perform a `docker login` with no errors.
 
 ```shell
 sudo mkdir -p /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/
-sudo cp /home/vbox/kubetests/certs/domain.crt /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/ca.crt
+sudo cp ./certs/${REGISTRY_IP_DOMAIN}.crt /etc/docker/certs.d/${REGISTRY_IP_DOMAIN}/ca.crt
 ```
 
 Now, perform a `docker login` and check that everything is ok (default credentials: `testuser:testpassword`):
