@@ -176,6 +176,19 @@ curl -X GET -u testuser:testpassword https://${REGISTRY_IP_DOMAIN}/v2/_catalog
 
 ## Modifications to the cluster
 
+## Increasing disk size
+
+It may happen that the disk size of Vagrant-created machines may result insufficient for our purposes. To address this issue, perform the following steps:
+
+1. Power down the VMs with `vagrant halt`; do not just shut down the offending VM or it may corrupt the information Vagrant has about it;
+2. `cd /var/lib/libvirt/images/` or navigate to the folder containing your `.img` file (you may want to use `find` to locate it);
+3. Resize the image: `qemu-img resize ${vmname}.img +${NUMBER_OF_GBS}G`, where `${NUMBER_OF_GBS}` is the desired increase in size;
+4. Assess that the operation was successful: `qemu-img info ${vmname}.img`;
+5. Start the VMs back up: `vagrant up`.
+6. SSH to the VM and resize the filesystem with `echo ", +" | sfdisk -N 2 /dev/vda --no-reread`;
+7. Run `partprobe` for refreshing the partitions;
+8. Finally, run `resize2fs /dev/vda2` for increasing the size of the filesystem (make sure to replace `/dev/vda2` with the correct partition number, check with `df`).
+
 ### k8s v1.27 Parallel Image Pulls
 
 In Kubernetes v1.27, there is an option for parallel image pulls. This option is not enabled by default. To enable it, you need to edit the `kubelet-config` configmap in the `kube-system` namespace. Then, you need to restart the kubelet on each node. This can be done with the following commands:
