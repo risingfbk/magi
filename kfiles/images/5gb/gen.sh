@@ -17,7 +17,7 @@ fi
 for i in {1..7}; do
     echo "FROM ubuntu:latest" >> Dockerfile
     for y in $(seq 1 5); do
-        printf 'RUN od --format=c --address-radix=n /dev/urandom | tr -d " " | tr -d "\n" | head -c 1950M >> random.random.%s\n' "$y" >> Dockerfile
+        printf 'RUN od --format=c --address-radix=n /dev/urandom | tr -d " " | tr -d "\\n" | head -c 1950M >> random.random.%s\n' "$y" >> Dockerfile
     done
     docker build . -t "$REGISTRY_IP_DOMAIN/mfranzil/5gb:$i" --no-cache
     docker push "$REGISTRY_IP_DOMAIN/mfranzil/5gb:$i"
