@@ -312,6 +312,28 @@ sudo iptables -A FORWARD -i enp0s31f6 -o wlp2s0 -j ACCEPT
 sudo iptables -A FORWARD -i wlp2s0 -o enp0s31f6 -m state --state RELATED,ESTABLISHED -j ACCEPT
 ```
 
+## License
+
+This software is licensed under the Apache 2.0 license. See [LICENSE](LICENSE) for more details.
+
+## Contributing
+
+All contributions are welcome. If you have any doubts or questions feel free to open an issue or contact the maintainers.
+
+## Acknowledgements
+
+This work was partially supported by project SERICS (PE00000014), MUR National Recovery and Resilience Plan funded by the European Union - NextGenerationEU, and by project FLUIDOS (grant agreement No 101070473), European Union’s Horizon Europe Programme.
+
+The author list is the following:
+
+- [Luis Augusto Dias Knob](https://github.com/luisdknob), Fondazione Bruno Kessler - `l.diasknob@fbk.eu`
+- [Matteo Franzil](https://github.com/mfranzil), Fondazione Bruno Kessler - `mfranzil@fbk.eu`
+- Domenico Siracusa, Fondazione Bruno Kessler - `dsiracusa@fbk.eu`
+
+If you wish to cite this work for scientific research, do it as follows:
+
+> L. A. D. Knob, M. Franzil, and D. Siracusa, “Exploiting Kubernetes’ Image Pull Implementation to Deny Node Availability.” arXiv. Preprint available: http://arxiv.org/abs/2401.10582. [Accessed: Jan. 23, 2024]
+
 ## References
 
 1. ‘A possible reason for your Virtualbox VM entering the “gurumeditation” state’, meroupatate, May 02, 2020. https://meroupatate.github.io/posts/gurumeditation/ (accessed May 05, 2023).
