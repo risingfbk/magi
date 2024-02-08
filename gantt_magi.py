@@ -15,19 +15,19 @@ images_a = {
 }
 
 t_a = {
-    0: [0,     40, 60, 82, 83, 0],
-    1: [0, 20, 40, 61, 82, 84, 0],
-    2: [0, 20, 40, 60, 88, 94, 0]
+    0: [0,     50, 70, 92, 93, 0],
+    1: [0, 20, 50, 71, 92, 94, 0],
+    2: [0, 20, 50, 70, 92, 94, 0]
 }
-
+					
 duration_a = {
-    0: [460,       512,  495,  500,  555,  0],
-    1: [474, 2050, 2128, 2131, 2203, 2240, 0],
-    2: [420, 550,  668,  672,  698,  735,  0]
+    0: [488,       584,  587,  583,  711,  0],
+    1: [373, 373+250,  1392, 1662, 1698, 1750, 0],
+    2: [401, 401+20,   459,  551,  585,  651,  0]
 }
 
 sns.set_context('paper')
-sns.set(rc={'figure.figsize': (15, 4.8), 'figure.dpi': 300, 'savefig.dpi': 300}, font_scale=1.22)
+sns.set(rc={'figure.figsize': (6, 4.8), 'figure.dpi': 2000, 'savefig.dpi': 2000}, font_scale=1.22)
 sns.set_style('whitegrid')
 sns.set_palette(['#4884cf'])  # , "#17374d", "lightgrey"])
 
@@ -62,9 +62,9 @@ for qq in range(len(axs)):
 
     ax.set_yticks(np.arange(len(images)))
     ax.set_yticklabels(images)
-    ax.set_xticks(range(0, 2600, 120))
+    ax.set_xticks(range(0, 32 * 60, 240))
     if qq == len(axs) - 1:
-        ax.set_xticklabels([i//60 for i in range(0, 2600, 120)])
+        ax.set_xticklabels([i//60 for i in range(0, 32 * 60, 240)])
     else:
         ax.set_xticklabels([])
     if qq == 0:
@@ -75,7 +75,7 @@ for qq in range(len(axs)):
         ax.set_ylabel("With mitigation")
     ax.set_ylim(-0.5, len(images) - 1 - 0.5)
     ax.invert_yaxis()
-    ax.set_xlim(0, 40*60)
+    ax.set_xlim(0, 32*60)
 
 plt.subplots_adjust(hspace=0.05)
 plt.xlabel('Time (min)')
