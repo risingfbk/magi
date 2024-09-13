@@ -1,8 +1,8 @@
 [submodule "magi_system/imagesnoop"]
 	path = magi_system/imagesnoop
-	url = git@gitlab.fbk.eu:l.diasknob/imagesnoop.git
+    url = https://gitlab.fbk.eu/risingfbk/imagesnoop.git
 	branch = main
 [submodule "magi_system/containerdsnoop"]
 	path = magi_system/containerdsnoop
-	url = git@gitlab.fbk.eu:mfranzil/containerdsnoop.git
+    url = https://github.com/risingfbk/containerdsnoop.git
 	branch = pullimage-only
