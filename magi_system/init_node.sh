@@ -77,6 +77,10 @@ sleep 5
 pid=$!
 
 echo "Checking python3 requirements..."
+if ! command -v pip &>/dev/null; then
+    echo "pip is not installed, exiting..."
+    exit 1
+fi
 reqs=$(pip freeze -r requirements.txt 2>&1 | grep "WARNING")
 if [[ -n "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
     echo "Some python3 requirements are missing:"
@@ -111,7 +115,7 @@ else
         export PATH=$PATH:/home/vagrant/go/bin
     else
         echo "bbolt is not installed, installing..."
-        go install go.etcd.io/bbolt/cmd/bbolt@latest
+        go install go.etcd.io/bbolt/cmd/bbolt@v1.3.7
     fi
 fi
 
