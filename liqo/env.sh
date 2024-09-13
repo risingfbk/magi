@@ -13,8 +13,11 @@ export GKE_CLUSTER_SECOND_ZONE=europe-west1-b
 
 export GKE_CLUSTER_FIRST_REGION=europe-southwest1
 export GKE_CLUSTER_SECOND_REGION=europe-west1
-# The name of the GKE resource on GCP
-export GKE_CLUSTER_FIRST_ID=rising
-export GKE_CLUSTER_SECOND_ID=createnet2
 
+# The name of the GKE resource on GCP
+export GKE_CLUSTER_FIRST_ID=provider
+export GKE_CLUSTER_SECOND_ID=consumer
+
+export GKE_CLUSTER_FIRST_NAME=provider
+export GKE_CLUSTER_SECOND_NAME=consumer
 [[ -z $WHITELISTED_CIDR ]] && echo "export WHITELISTED_CIDR='subnets_that_can_use_kubectl'" && exit 1
