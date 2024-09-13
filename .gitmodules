@@ -1,6 +1,6 @@
 [submodule "magi_system/imagesnoop"]
 	path = magi_system/imagesnoop
-    url = https://gitlab.fbk.eu/risingfbk/imagesnoop.git
+    url = https://github.com/risingfbk/imagesnoop.git
 	branch = main
 [submodule "magi_system/containerdsnoop"]
 	path = magi_system/containerdsnoop
