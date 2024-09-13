@@ -62,25 +62,12 @@ else
     fi
 fi
 
-# echo "Setting up socat..."
-# rm -rf ${CTDSNOOP_LOG}
-# socat PIPE:${CTDSNOOP_LOG} TCP4-LISTEN:22333,reuseaddr,fork &
-
-echo "Rebooting kubelet, this may take a while..."
-systemctl stop kubelet
-(sleep 15 && systemctl start kubelet) &
-
-sleep 10
-echo "Starting containerdsnoop..."
-./containerdsnoop/containerdsnoop -complete_content >${CTDSNOOP_LOG} 2>&1 &
-sleep 5
-pid=$!
-
 echo "Checking python3 requirements..."
 if ! command -v pip &>/dev/null; then
     echo "pip is not installed, exiting..."
     exit 1
 fi
+
 reqs=$(pip freeze -r requirements.txt 2>&1 | grep "WARNING")
 if [[ -n "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
     echo "Some python3 requirements are missing:"
@@ -104,7 +91,6 @@ if [[ -n "$reqs" && $(echo "$reqs" | wc -l) -gt 0 ]]; then
 else
     echo "All python3 requirements are satisfied."
 fi
-# trap "exit" INT TERM ERR
 
 echo "Checking if bbolt is installed..."
 if which bbolt &>/dev/null; then
@@ -118,6 +104,16 @@ else
         go install go.etcd.io/bbolt/cmd/bbolt@v1.3.7
     fi
 fi
+
+echo "Rebooting kubelet, this may take a while..."
+systemctl stop kubelet
+(sleep 15 && systemctl start kubelet) &
+
+sleep 10
+echo "Starting containerdsnoop..."
+./containerdsnoop/containerdsnoop -complete_content >${CTDSNOOP_LOG} 2>&1 &
+sleep 5
+pid=$!
 
 echo "Bringing out the snoopers..."
 ./imagesnoop/mkdirsnoop -P $(pgrep containerd$) -f $MKDIRSNOOP_LOG &
